@@ -1,0 +1,35 @@
+# Node dependencies and build
+node_modules/
+dist/
+build/
+.env
+.env.*
+!.env.example
+
+# Python virtual environment and cache
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Local databases and logs
+*.db
+*.db.backup_*
+*.backup_*
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Secrets and Credentials
+backend/secrets/
+secrets/
+*service-account*.json
+*.pem
+*.key
+

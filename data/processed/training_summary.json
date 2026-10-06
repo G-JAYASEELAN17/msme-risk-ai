@@ -1,0 +1,112 @@
+{
+  "model_version": "1.1.0",
+  "best_model": "XGBoost",
+  "best_roc_auc": 0.9647,
+  "evaluation_metrics": {
+    "accuracy": 0.918,
+    "precision": 0.781,
+    "recall": 0.82,
+    "f1_score": 0.8,
+    "roc_auc": 0.9647,
+    "confusion_matrix": [
+      [
+        377,
+        23
+      ],
+      [
+        18,
+        82
+      ]
+    ]
+  },
+  "all_model_results": {
+    "Logistic Regression": {
+      "accuracy": 0.932,
+      "precision": 0.8438,
+      "recall": 0.81,
+      "f1_score": 0.8265,
+      "roc_auc": 0.9571,
+      "confusion_matrix": [
+        [
+          385,
+          15
+        ],
+        [
+          19,
+          81
+        ]
+      ]
+    },
+    "Decision Tree": {
+      "accuracy": 0.916,
+      "precision": 0.79,
+      "recall": 0.79,
+      "f1_score": 0.79,
+      "roc_auc": 0.899,
+      "confusion_matrix": [
+        [
+          379,
+          21
+        ],
+        [
+          21,
+          79
+        ]
+      ]
+    },
+    "Random Forest": {
+      "accuracy": 0.924,
+      "precision": 0.8523,
+      "recall": 0.75,
+      "f1_score": 0.7979,
+      "roc_auc": 0.9591,
+      "confusion_matrix": [
+        [
+          387,
+          13
+        ],
+        [
+          25,
+          75
+        ]
+      ]
+    },
+    "XGBoost": {
+      "accuracy": 0.918,
+      "precision": 0.781,
+      "recall": 0.82,
+      "f1_score": 0.8,
+      "roc_auc": 0.9647,
+      "confusion_matrix": [
+        [
+          377,
+          23
+        ],
+        [
+          18,
+          82
+        ]
+      ]
+    }
+  },
+  "features": {
+    "numerical": [
+      "age",
+      "employees",
+      "annual_revenue",
+      "monthly_cash_flow",
+      "monthly_expenses",
+      "existing_debt",
+      "digital_transactions",
+      "utility_payment_score",
+      "invoice_payment_score",
+      "previous_defaults"
+    ],
+    "categorical": [
+      "industry"
+    ]
+  },
+  "training_samples": 2500,
+  "test_samples": 500,
+  "trained_at": "2026-09-16T10:19:42.741186"
+}

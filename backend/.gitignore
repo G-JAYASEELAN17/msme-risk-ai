@@ -1,0 +1,22 @@
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Secrets & Service Account Keys
+secrets/
+backend/secrets/
+*service-account*.json
+*.pem
+*.key
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+
+# Database
+*.db
+*.sqlite3
