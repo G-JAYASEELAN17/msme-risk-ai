@@ -1,11 +1,12 @@
-# Dependencies
+# Dependencies & Build Artefacts
 node_modules/
 dist/
 build/
 .vite/
+**/.vite/
 project/.vite/
 
-# Environment Variables & Secrets
+# Environment Variables & Secrets (Preserve .env.example)
 .env
 .env.*
 !.env.example
@@ -18,13 +19,16 @@ backend/secrets/
 *.p8
 *.p12
 
-# Python Virtual Environments & Cache
+# Python Virtual Environments & Interpreter Caches
 venv/
 .venv/
+backend/.venv/
+**/__pycache__/
 __pycache__/
 *.py[cod]
 *$py.class
 .pytest_cache/
+**/.pytest_cache/
 .mypy_cache/
 .coverage
 htmlcov/
@@ -38,18 +42,22 @@ htmlcov/
 *.sqlite3
 backend/uploads/
 uploads/
+**/uploads/
 *.log
+**/*.log
+*.tmp
+**/*.tmp
+*.swp
+**/*.swp
 
-# Editor & Scratch Files
+# Editor, OS & Scratch Artifacts
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
 scratch/
+**/scratch/
 powershell.bat
-backend/powershell.bat
-frontend/powershell.bat
+**/powershell.bat
 .bolt/
-
-# Model Checkpoints (Temporary)
-*.tmp
+**/.bolt/
