@@ -735,6 +735,37 @@ export default function Settings() {
                     </div>
                   )}
 
+                  {/* AI Model Governance & MLOps Monitoring Module */}
+                  <div className="p-5 rounded-2xl bg-gradient-to-r from-[#09152b] to-[#0d1d3a] border border-[#1d3862] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-cyan-950/70 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 mt-0.5">
+                        <Activity className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-white font-['Space_Grotesk']">
+                          AI Model Governance & Risk Monitoring Platform
+                        </h3>
+                        <p className="text-xs text-slate-300 mt-0.5">
+                          Track XGBoost v1.1.0 inference distributions, feature data drift, operational risk scores, and formal model cards.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                      <button
+                        onClick={() => navigate('/admin/model-monitoring')}
+                        className="px-3.5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-bold transition-all shadow-md shadow-cyan-500/20"
+                      >
+                        Model Monitoring
+                      </button>
+                      <button
+                        onClick={() => navigate('/admin/model-card')}
+                        className="px-3.5 py-2 rounded-xl bg-[#0c1b33] hover:bg-[#13284b] text-slate-200 border border-[#1c355c] text-xs font-semibold transition-all"
+                      >
+                        Institutional Model Card
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Users Table */}
                   <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
                     <div className="p-4 border-b border-slate-800 flex items-center justify-between">

@@ -1,8 +1,9 @@
 import os
+import json
 from pathlib import Path
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import List, Optional
+from typing import List, Optional, Union
 
 # Absolute paths
 BACKEND_DIR: Path = Path(__file__).resolve().parent.parent
@@ -20,14 +21,16 @@ class Settings(BaseSettings):
         extra="allow"
     )
     
+    APP_ENV: str = "production"
+    DEBUG: bool = False
     PROJECT_NAME: str = "MSME Risk AI API"
     API_V1_STR: str = "/api"
     
     # DATABASE_URL loaded directly from backend/.env (Supabase PostgreSQL)
     DATABASE_URL: str = os.getenv("DATABASE_URL", "")
     
-    # CORS Configuration
-    CORS_ORIGINS: List[str] = [
+    # Raw CORS origins from environment (can be list, json string, or comma-separated string)
+    CORS_ORIGINS: Union[List[str], str] = [
         "http://localhost:5173",
         "http://localhost:3000",
         "http://127.0.0.1:5173",
@@ -45,6 +48,18 @@ class Settings(BaseSettings):
     FIREBASE_PRIVATE_KEY: Optional[str] = None
     FIREBASE_CLOCK_SKEW_SECONDS: int = 10
     
+    # Supabase Storage Configuration
+    SUPABASE_URL: Optional[str] = None
+    SUPABASE_SERVICE_ROLE_KEY: Optional[str] = None
+    SUPABASE_STORAGE_BUCKET: str = "msme-documents"
+    
+    # OCR Configuration
+    OCR_PROVIDER: str = "mock"  # mock | tesseract | cloud
+    TESSERACT_CMD: Optional[str] = None
+    
+    # Test Authentication Toggle - MUST BE FALSE IN PRODUCTION
+    ALLOW_TEST_AUTH: bool = False
+    
     # Demo Data Seeding Toggle (False by default for strict user data isolation)
     SEED_DEMO_DATA: bool = False
     
@@ -53,6 +68,34 @@ class Settings(BaseSettings):
     MODEL_PATH: str = str(Path(__file__).resolve().parent.parent / "ml" / "models" / "model.joblib")
     PREPROCESSOR_PATH: str = str(Path(__file__).resolve().parent.parent / "ml" / "models" / "scaler.joblib")
     MODEL_METADATA_PATH: str = str(Path(__file__).resolve().parent.parent / "ml" / "models" / "model_metadata.json")
+
+    @property
+    def cors_origins_list(self) -> List[str]:
+        """
+        Parses CORS_ORIGINS safely into a list of allowed origins.
+        Strictly forbids wildcard ('*') when credentials are enabled.
+        """
+        raw = self.CORS_ORIGINS
+        origins: List[str] = []
+        if isinstance(raw, list):
+            origins = [str(o).strip().rstrip("/") for o in raw if str(o).strip()]
+        elif isinstance(raw, str):
+            raw_str = raw.strip()
+            if raw_str.startswith("[") and raw_str.endswith("]"):
+                try:
+                    parsed = json.loads(raw_str)
+                    origins = [str(o).strip().rstrip("/") for o in parsed if str(o).strip()]
+                except Exception:
+                    origins = [o.strip().rstrip("/") for o in raw_str.strip("[]").split(",") if o.strip()]
+            else:
+                origins = [o.strip().rstrip("/") for o in raw_str.split(",") if o.strip()]
+        
+        # Enforce security: NEVER allow '*' when allow_credentials=True in production
+        sanitized = [o for o in origins if o != "*"]
+        if not sanitized:
+            # Safe local fallback in development
+            return ["http://localhost:5173", "http://localhost:3000"]
+        return sanitized
 
     def get_firebase_credentials_file(self) -> Optional[Path]:
         """Resolves the Firebase service account JSON credential path reliably using pathlib."""

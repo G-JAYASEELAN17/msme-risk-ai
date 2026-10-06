@@ -14,8 +14,13 @@ import {
   ShieldCheck,
   Info,
   Sliders,
+  Activity,
+  Layers,
+  History,
+  FileText,
 } from "lucide-react";
 import { auth } from "../services/firebase";
+import { api, PredictionResponse, PredictionRequest, RiskTrendResult } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import PageHeader from "../components/PageHeader";
 import Button from "../components/ui/Button";
@@ -28,31 +33,12 @@ export default function Prediction() {
   const location = useLocation();
   const navigate = useNavigate();
   const [showSimulator, setShowSimulator] = useState(false);
+  const [riskTrend, setRiskTrend] = useState<RiskTrendResult | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
 
   const state = location.state as {
-    prediction?: {
-      assessment_id: number;
-      default_probability: number;
-      risk_level: string;
-      confidence: number;
-      top_factors: string[];
-      positive_factors: string[];
-      risk_factors: string[];
-    };
-    inputs?: {
-      name: string;
-      industry: string;
-      age: number;
-      employees: number;
-      annual_revenue: number;
-      monthly_cash_flow: number;
-      monthly_expenses: number;
-      existing_debt: number;
-      digital_transactions?: number;
-      utility_payment_score?: number;
-      invoice_payment_score?: number;
-      previous_defaults?: number;
-    };
+    prediction?: PredictionResponse;
+    inputs?: PredictionRequest;
   } | null;
 
   useEffect(() => {
@@ -63,6 +49,15 @@ export default function Prediction() {
     });
     return () => unsubscribe();
   }, [navigate]);
+
+  useEffect(() => {
+    if (state?.prediction?.assessment_id) {
+      api
+        .getPredictionRiskTrend(state.prediction.assessment_id)
+        .then((trend) => setRiskTrend(trend))
+        .catch((err) => console.log("Trend lookup:", err));
+    }
+  }, [state?.prediction?.assessment_id]);
 
   if (!state || !state.prediction || !state.inputs) {
     return (
@@ -94,6 +89,22 @@ export default function Prediction() {
   const isLow = level === "LOW";
   const isMed = level === "MEDIUM";
 
+  const riskScore =
+    prediction.risk_score !== undefined
+      ? Math.round(prediction.risk_score)
+      : Math.round(prediction.default_probability * 100);
+
+  const dataQualityScore =
+    prediction.data_quality_score !== undefined
+      ? Math.round(prediction.data_quality_score)
+      : 100;
+
+  const dataQualityTier = prediction.data_quality_tier || (
+    dataQualityScore >= 85 ? "High Quality" : dataQualityScore >= 65 ? "Medium Quality" : "Low Quality"
+  );
+
+  const modelVersion = prediction.model_version || "1.1.0";
+
   // Decision guidance text based on risk category
   const guidance = isLow
     ? {
@@ -122,6 +133,15 @@ export default function Prediction() {
         bg: "bg-rose-950/20",
       };
 
+  const categories = prediction.factor_breakdown?.categories || {};
+  const categoryNames = Object.keys(categories);
+  const allFactors = prediction.factor_breakdown?.all_factors || [];
+
+  const displayedFactors =
+    selectedCategory === "ALL"
+      ? allFactors
+      : categories[selectedCategory] || [];
+
   return (
     <div className="app-layout">
       <Sidebar active="Risk results" />
@@ -129,8 +149,8 @@ export default function Prediction() {
       <main className="main-content space-y-8">
         <PageHeader
           badge={`Assessment MSME-${prediction.assessment_id}24`}
-          title={`Risk Evaluation: ${inputs.name}`}
-          description={`ML credit risk evaluation completed on ${new Date().toLocaleDateString("en-US", {
+          title={`Risk Intelligence: ${inputs.name}`}
+          description={`ML credit risk evaluation completed with XGBoost v${modelVersion} on ${new Date().toLocaleDateString("en-US", {
             year: "numeric",
             month: "long",
             day: "numeric",
@@ -144,6 +164,14 @@ export default function Prediction() {
                 onClick={() => setShowSimulator(!showSimulator)}
               >
                 {showSimulator ? "Hide Simulator" : "What-If Simulator"}
+              </Button>
+              <Button
+                variant="outline"
+                size="md"
+                icon={<History className="w-4 h-4" />}
+                onClick={() => navigate("/prediction-history")}
+              >
+                Prediction History
               </Button>
               <Button
                 variant="outline"
@@ -183,64 +211,121 @@ export default function Prediction() {
               </button>
             </div>
             <WhatIfSimulator
-              initialBaseline={{
-                annual_revenue: inputs.annual_revenue,
-                monthly_cash_flow: inputs.monthly_cash_flow,
-                existing_debt: inputs.existing_debt,
-                monthly_expenses: inputs.monthly_expenses,
-                age: inputs.age,
-                employees: inputs.employees,
-                industry: inputs.industry,
-                utility_payment_score: inputs.utility_payment_score || 80,
-                invoice_payment_score: inputs.invoice_payment_score || 80,
-                digital_transactions: inputs.digital_transactions || 500,
-                previous_defaults: inputs.previous_defaults || 0,
-              }}
+              assessmentId={prediction.assessment_id}
+              baselineData={inputs}
             />
           </div>
         )}
 
-        {/* Primary Risk Score Dashboard Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Risk Dial / Score Card (1 col) */}
-          <Card className="flex flex-col justify-between overflow-hidden relative">
+        {/* Primary Intelligence Metric Cards (4 Cards Grid) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Card 1: Risk Score (0-100) */}
+          <Card className="p-5 flex flex-col justify-between relative overflow-hidden">
             <div
               className={`absolute top-0 inset-x-0 h-1.5 ${
                 isLow ? "bg-emerald-500" : isMed ? "bg-amber-500" : "bg-rose-500"
               }`}
             />
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  Risk Category
+            <div className="flex justify-between items-center text-xs text-slate-400">
+              <span className="font-semibold uppercase tracking-wider">Normalized Risk Score</span>
+              <RiskBadge riskLevel={prediction.risk_level} size="sm" />
+            </div>
+            <div className="my-3">
+              <div className="flex items-baseline gap-1">
+                <span className="text-5xl font-extrabold text-white font-['Space_Grotesk'] tracking-tight">
+                  {riskScore}
                 </span>
-                <RiskBadge riskLevel={prediction.risk_level} size="md" />
+                <span className="text-xl font-bold text-slate-400">/ 100</span>
               </div>
-            </CardHeader>
-
-            <CardContent className="flex flex-col items-center justify-center text-center py-6">
-              <div className="text-xs text-slate-400 font-medium mb-1">
-                Estimated Default Probability
+              <div className="text-[11px] text-slate-400 mt-1">
+                Tier Band: {isLow ? "0–24 (Low)" : isMed ? "25–55 (Medium)" : "56–100 (High)"}
               </div>
-              <div className="flex items-baseline gap-1 my-2">
-                <span className="text-6xl font-extrabold text-white font-['Space_Grotesk'] tracking-tight">
-                  {prediction.default_probability.toFixed(1)}
-                </span>
-                <span className="text-2xl font-bold text-slate-400">%</span>
-              </div>
-
-              <div className="mt-4 px-4 py-2 rounded-xl bg-[#091427] border border-[#172c49] text-xs text-slate-300 flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0" />
-                <span>Model Confidence: <b className="text-white">{prediction.confidence}%</b></span>
-              </div>
-            </CardContent>
-
-            <div className="p-4 bg-[#091322] border-t border-[#16273f] text-center text-xs text-slate-400">
-              Health Score: <b className="text-white font-mono">{Math.round(100 - prediction.default_probability)} / 100</b>
+            </div>
+            <div className="text-[11px] text-slate-400 border-t border-[#16273f] pt-2">
+              Standardized credit score index
             </div>
           </Card>
 
-          {/* Underwriter Guidance & Actions (2 cols) */}
+          {/* Card 2: Estimated Default Probability */}
+          <Card className="p-5 flex flex-col justify-between">
+            <div className="flex justify-between items-center text-xs text-slate-400">
+              <span className="font-semibold uppercase tracking-wider">Default Probability</span>
+              <Activity className="w-4 h-4 text-cyan-400" />
+            </div>
+            <div className="my-3">
+              <div className="flex items-baseline gap-1">
+                <span className="text-5xl font-extrabold text-cyan-400 font-['Space_Grotesk'] tracking-tight">
+                  {prediction.default_probability.toFixed(1)}
+                </span>
+                <span className="text-2xl font-bold text-cyan-500">%</span>
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1">
+                Raw model default likelihood
+              </div>
+            </div>
+            <div className="text-[11px] text-slate-400 border-t border-[#16273f] pt-2">
+              Model: <b className="text-white">XGBoost v{modelVersion}</b>
+            </div>
+          </Card>
+
+          {/* Card 3: Model Confidence Indicator */}
+          <Card className="p-5 flex flex-col justify-between">
+            <div className="flex justify-between items-center text-xs text-slate-400">
+              <span className="font-semibold uppercase tracking-wider">Model Confidence</span>
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            </div>
+            <div className="my-3">
+              <div className="flex items-baseline gap-1">
+                <span className="text-5xl font-extrabold text-white font-['Space_Grotesk'] tracking-tight">
+                  {prediction.confidence.toFixed(1)}
+                </span>
+                <span className="text-2xl font-bold text-slate-400">%</span>
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1">
+                Model confidence indicator
+              </div>
+            </div>
+            <div className="text-[11px] text-slate-400 border-t border-[#16273f] pt-2" title="Indicates boundary margin distance; not calibrated posterior probability">
+              Proximity certainty indicator
+            </div>
+          </Card>
+
+          {/* Card 4: Data Quality Score */}
+          <Card className="p-5 flex flex-col justify-between">
+            <div className="flex justify-between items-center text-xs text-slate-400">
+              <span className="font-semibold uppercase tracking-wider">Data Quality Score</span>
+              <span
+                className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                  dataQualityScore >= 85
+                    ? "bg-emerald-950/60 text-emerald-400 border border-emerald-500/20"
+                    : dataQualityScore >= 65
+                    ? "bg-amber-950/60 text-amber-400 border border-amber-500/20"
+                    : "bg-rose-950/60 text-rose-400 border border-rose-500/20"
+                }`}
+              >
+                {dataQualityTier}
+              </span>
+            </div>
+            <div className="my-3">
+              <div className="flex items-baseline gap-1">
+                <span className="text-5xl font-extrabold text-emerald-400 font-['Space_Grotesk'] tracking-tight">
+                  {dataQualityScore}
+                </span>
+                <span className="text-xl font-bold text-slate-400">/ 100</span>
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1">
+                Input source integrity & verification
+              </div>
+            </div>
+            <div className="text-[11px] text-slate-400 border-t border-[#16273f] pt-2">
+              Document & financial completeness
+            </div>
+          </Card>
+        </div>
+
+        {/* Multi-Assessment Risk Trend & Underwriting Recommendation */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Underwriting Recommendation (2 cols) */}
           <Card className="lg:col-span-2 flex flex-col justify-between">
             <CardHeader>
               <div className="flex items-center gap-2">
@@ -248,14 +333,14 @@ export default function Prediction() {
                 <div>
                   <CardTitle>Underwriting Recommendation</CardTitle>
                   <CardDescription>
-                    Automated credit committee decision guidance
+                    AI-Assisted Credit Risk Assessment for Analyst Review
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
 
-            <CardContent>
-              <div className={`p-4 rounded-xl border ${guidance.border} ${guidance.bg} mb-6`}>
+            <CardContent className="space-y-4">
+              <div className={`p-4 rounded-xl border ${guidance.border} ${guidance.bg}`}>
                 <h4 className={`text-sm font-bold ${guidance.color} mb-1.5 flex items-center gap-2`}>
                   {isLow ? (
                     <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -271,7 +356,21 @@ export default function Prediction() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs pt-2">
+              {/* Deterministic AI Underwriting Summary */}
+              {prediction.analyst_summary && (
+                <div className="p-4 rounded-xl bg-[#09152b] border border-[#182f50] space-y-1.5">
+                  <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wider">
+                    <Sparkles className="w-4 h-4" />
+                    <span>Deterministic AI Underwriting Summary</span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
+                    {prediction.analyst_summary}
+                  </p>
+                </div>
+              )}
+
+              {/* Core Financial Snapshot */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1">
                 <div className="p-3 rounded-lg bg-[#0a1424] border border-[#16273f]">
                   <span className="text-slate-400 block mb-0.5">Industry</span>
                   <span className="font-semibold text-white capitalize truncate block">{inputs.industry}</span>
@@ -285,89 +384,210 @@ export default function Prediction() {
                   <span className="font-semibold text-white">${inputs.existing_debt.toLocaleString()}</span>
                 </div>
                 <div className="p-3 rounded-lg bg-[#0a1424] border border-[#16273f]">
-                  <span className="text-slate-400 block mb-0.5">Monthly Exp.</span>
-                  <span className="font-semibold text-white">${inputs.monthly_expenses.toLocaleString()}</span>
+                  <span className="text-slate-400 block mb-0.5">Monthly Cash Flow</span>
+                  <span className="font-semibold text-white">${inputs.monthly_cash_flow.toLocaleString()}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Risk Trend & Model Lineage Card (1 col) */}
+          <Card className="flex flex-col justify-between">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Activity className="w-5 h-5 text-cyan-400" />
+                <div>
+                  <CardTitle>Historical Risk Trajectory</CardTitle>
+                  <CardDescription>Multi-assessment longitudinal analysis</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              {riskTrend ? (
+                <div className="space-y-3">
+                  <div className="p-4 rounded-xl bg-[#09152b] border border-[#1a3359] text-center">
+                    <span className="text-xs text-slate-400 block mb-1">Observed Trend</span>
+                    <div
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                        riskTrend.trend === "IMPROVING"
+                          ? "bg-emerald-950/80 text-emerald-400 border border-emerald-500/30"
+                          : riskTrend.trend === "INCREASING_RISK"
+                          ? "bg-rose-950/80 text-rose-400 border border-rose-500/30"
+                          : "bg-slate-800 text-slate-300 border border-slate-700"
+                      }`}
+                    >
+                      {riskTrend.trend === "IMPROVING" ? (
+                        <TrendingDown className="w-4 h-4" />
+                      ) : riskTrend.trend === "INCREASING_RISK" ? (
+                        <TrendingUp className="w-4 h-4" />
+                      ) : null}
+                      <span>{riskTrend.trend_label}</span>
+                    </div>
+                    <p className="text-xs text-slate-300 mt-2">{riskTrend.description}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="p-3 bg-[#0a1424] border border-[#16273f] rounded-lg text-center">
+                      <span className="text-slate-400 block mb-0.5">Previous Prob.</span>
+                      <span className="font-mono font-bold text-white">
+                        {riskTrend.previous_probability !== null && riskTrend.previous_probability !== undefined
+                          ? `${riskTrend.previous_probability.toFixed(1)}%`
+                          : "First Run"}
+                      </span>
+                    </div>
+                    <div className="p-3 bg-[#0a1424] border border-[#16273f] rounded-lg text-center">
+                      <span className="text-slate-400 block mb-0.5">Current Prob.</span>
+                      <span className="font-mono font-bold text-cyan-400">
+                        {riskTrend.current_probability.toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-6 text-center text-xs text-slate-400 bg-[#091322] border border-[#16273f] rounded-xl">
+                  First recorded credit assessment for this business. Trend requires multiple historical assessments.
+                </div>
+              )}
+
+              <div className="p-3 rounded-lg bg-[#081220] border border-[#16273f] text-xs text-slate-400">
+                <div className="flex justify-between py-1">
+                  <span>Model Engine:</span>
+                  <span className="font-mono text-slate-200">XGBoost Classifier</span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span>Model Version:</span>
+                  <span className="font-mono text-cyan-400">v{modelVersion}</span>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Influencing Decision Factors Ranking */}
+        {/* Explainable AI: 7-Category Factor Breakdown */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
                 <BrainCircuit className="w-5 h-5 text-cyan-400" />
                 <div>
-                  <CardTitle>Top Contributing Decision Factors</CardTitle>
+                  <CardTitle>Explainable AI — Categorized Factor Breakdown</CardTitle>
                   <CardDescription>
-                    Key features that drove the prediction model’s probability scoring
+                    SHAP TreeExplainer feature attributions grouped into 7 analytical dimensions
                   </CardDescription>
                 </div>
               </div>
-              <span className="text-xs text-slate-400 font-mono">SHAP Signal Ranking</span>
+
+              {/* Category Filter Pills */}
+              {categoryNames.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => setSelectedCategory("ALL")}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                      selectedCategory === "ALL"
+                        ? "bg-cyan-500 text-black font-semibold"
+                        : "bg-[#091427] text-slate-300 hover:bg-[#11233e] border border-[#16273f]"
+                    }`}
+                  >
+                    All Dimensions
+                  </button>
+                  {categoryNames.map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                        selectedCategory === cat
+                          ? "bg-cyan-500 text-black font-semibold"
+                          : "bg-[#091427] text-slate-300 hover:bg-[#11233e] border border-[#16273f]"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </CardHeader>
 
           <CardContent>
-            <div className="space-y-4">
-              {prediction.top_factors.map((factor, index) => {
-                const impactLabels = ["High Impact", "Medium Impact", "Moderate Impact"];
-                const widths = ["88%", "62%", "40%"];
+            {displayedFactors.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {displayedFactors.map((f, i) => (
+                  <div
+                    key={i}
+                    className="p-3.5 rounded-xl bg-[#091322] border border-[#16273f] flex flex-col justify-between gap-2"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="text-xs sm:text-sm font-semibold text-white">
+                          {f.display_name}
+                        </div>
+                        <span className="text-[10px] text-slate-400 uppercase tracking-wider font-mono">
+                          {f.category}
+                        </span>
+                      </div>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase shrink-0 ${
+                          f.impact_direction === "positive"
+                            ? "bg-emerald-950/70 text-emerald-400 border border-emerald-500/20"
+                            : "bg-rose-950/70 text-rose-400 border border-rose-500/20"
+                        }`}
+                      >
+                        {f.impact_direction === "positive" ? "✓ Reduces Risk" : "⚠ Increases Risk"}
+                      </span>
+                    </div>
 
-                const label = impactLabels[index % 3];
-                const width = widths[index % 3];
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      {f.explanation}
+                    </p>
 
-                return (
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-[#132338] pt-1.5 mt-1 font-mono">
+                      <span>Value: <b className="text-slate-200">{String(f.value)}</b></span>
+                      <span>Impact: <b className="text-cyan-400 capitalize">{f.impact_magnitude}</b></span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {prediction.top_factors.map((factor, index) => (
                   <div
                     key={factor}
-                    className="p-3.5 rounded-xl bg-[#091322] border border-[#16273f] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    className="p-3.5 rounded-xl bg-[#091322] border border-[#16273f] flex items-center justify-between"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="w-6 h-6 rounded-md bg-[#13233c] text-cyan-400 text-xs font-bold flex items-center justify-center shrink-0">
+                      <span className="w-6 h-6 rounded-md bg-[#13233c] text-cyan-400 text-xs font-bold flex items-center justify-center">
                         0{index + 1}
                       </span>
                       <span className="text-xs sm:text-sm font-medium text-slate-100">{factor}</span>
                     </div>
-
-                    <div className="flex items-center gap-3 sm:w-56 shrink-0">
-                      <div className="h-2 flex-1 bg-[#15253d] rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full"
-                          style={{ width }}
-                        />
-                      </div>
-                      <span className="text-[11px] font-semibold text-cyan-400 min-w-[70px] text-right">
-                        {label}
-                      </span>
-                    </div>
+                    <span className="text-xs text-cyan-400 font-semibold">High Impact</span>
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Positive Indicators vs Risk Signals */}
+        {/* Top Positive Indicators vs Risk Vulnerabilities */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Positive Signals */}
+          {/* Top Positive Signals */}
           <Card>
             <CardHeader className="border-b border-[#16273f]">
               <div className="flex items-center gap-2 text-emerald-400">
                 <TrendingUp className="w-5 h-5" />
-                <CardTitle className="text-emerald-400">Positive Credit Signals</CardTitle>
+                <CardTitle className="text-emerald-400">Top Positive Credit Factors</CardTitle>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               {prediction.positive_factors.length === 0 ? (
                 <p className="text-xs text-slate-400 py-2">
-                  No significant positive credit signals identified.
+                  No dominant positive credit signals identified.
                 </p>
               ) : (
                 <ul className="space-y-3">
-                  {prediction.positive_factors.map((p) => (
-                    <li key={p} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-200">
+                  {prediction.positive_factors.map((p, idx) => (
+                    <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-200">
                       <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                       <span>{p}</span>
                     </li>
@@ -377,23 +597,23 @@ export default function Prediction() {
             </CardContent>
           </Card>
 
-          {/* Risk Factors */}
+          {/* Top Risk Factors */}
           <Card>
             <CardHeader className="border-b border-[#16273f]">
               <div className="flex items-center gap-2 text-rose-400">
                 <TrendingDown className="w-5 h-5" />
-                <CardTitle className="text-rose-400">Risk Signals & Vulnerabilities</CardTitle>
+                <CardTitle className="text-rose-400">Top Negative Risk Factors</CardTitle>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               {prediction.risk_factors.length === 0 ? (
                 <p className="text-xs text-slate-400 py-2">
-                  No critical credit risk flags detected.
+                  No critical credit vulnerabilities flagged.
                 </p>
               ) : (
                 <ul className="space-y-3">
-                  {prediction.risk_factors.map((r) => (
-                    <li key={r} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-200">
+                  {prediction.risk_factors.map((r, idx) => (
+                    <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-200">
                       <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                       <span>{r}</span>
                     </li>
@@ -404,12 +624,15 @@ export default function Prediction() {
           </Card>
         </div>
 
-        {/* Regulatory & System Disclaimer */}
-        <div className="p-4 rounded-xl bg-[#081120] border border-[#16273f] text-xs text-slate-400 leading-relaxed mb-6">
-          <span className="font-bold text-amber-400 uppercase tracking-wider block mb-1">
-            System Disclaimer & Regulatory Notice
-          </span>
-          This assessment is generated by an artificial intelligence decision-support model to estimate MSME loan default probability. It is designed to assist credit officers and risk analysts by highlighting financial patterns and alternative indicators. It does not constitute an automated final lending decision or statutory credit bureau score.
+        {/* Regulatory & System Disclaimers */}
+        <div className="p-4 rounded-xl bg-[#081120] border border-[#16273f] text-xs text-slate-400 leading-relaxed space-y-2">
+          <div className="flex items-center gap-2 text-amber-400 font-bold uppercase tracking-wider text-[11px]">
+            <ShieldCheck className="w-4 h-4 shrink-0" />
+            <span>AI-Assisted Credit Risk Assessment — Decision Support Notice</span>
+          </div>
+          <p>
+            This system provides AI-assisted credit risk decision support and does not autonomously approve or reject loans. All outputs are intended for licensed credit risk analysts and loan underwriting committees. Historical predictions and scenario results are hypothetical estimates that do not guarantee future repayment performance.
+          </p>
         </div>
       </main>
     </div>

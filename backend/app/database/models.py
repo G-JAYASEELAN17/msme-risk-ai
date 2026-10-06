@@ -72,10 +72,14 @@ class Prediction(Base):
     assessment_id = Column(Integer, ForeignKey("assessments.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     default_probability = Column(Float, nullable=False)
     risk_level = Column(String, nullable=False)  # LOW / MEDIUM / HIGH
+    risk_score = Column(Float, nullable=True, default=0.0)  # Normalized 0-100 risk score
     confidence = Column(Float, nullable=False)
+    data_quality_score = Column(Float, nullable=True, default=100.0)  # 0-100 input quality score
     top_factors = Column(JSON, nullable=False)      # JSON array of structured factor strings
     positive_factors = Column(JSON, nullable=False, default=list) # JSON array of positive signal strings
     risk_factors = Column(JSON, nullable=False, default=list)     # JSON array of risk signal strings
+    factor_breakdown = Column(JSON, nullable=True, default=dict)  # Categorized factor details
+    analyst_summary = Column(Text, nullable=True)                 # Deterministic AI explanation summary
     model_version = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
     
@@ -104,13 +108,41 @@ class Document(Base):
     file_size = Column(Integer, nullable=False)  # Bytes
     mime_type = Column(String, nullable=False)
     file_path = Column(String, nullable=False)
-    status = Column(String, default="uploaded", nullable=False)  # uploaded | processed | verified | error
-    extracted_data = Column(JSON, default=dict, nullable=False)   # OCR/Parsed key-values
+    status = Column(String, default="uploaded", nullable=False)  # legacy status: uploaded | processed | verified | error
+    document_type = Column(String, default="OTHER", nullable=False)  # BANK_STATEMENT | GST_DOCUMENT | INVOICE | UTILITY_BILL | PROFIT_LOSS | BALANCE_SHEET | INCOME_STATEMENT | LOAN_STATEMENT | OTHER
+    processing_status = Column(String, default="UPLOADED", nullable=False)  # UPLOADED | PROCESSING | EXTRACTED | REVIEW_REQUIRED | VERIFIED | FAILED
+    error_message = Column(Text, nullable=True)
+    extracted_data = Column(JSON, default=dict, nullable=False)   # Structured key-values summary
     created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow, nullable=False)
     
     # Relationships
     user = relationship("User", back_populates="documents")
     business = relationship("Business", back_populates="documents")
+    fields = relationship("ExtractedField", back_populates="document", cascade="all, delete-orphan", lazy="selectin")
+
+class ExtractedField(Base):
+    __tablename__ = "extracted_fields"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    document_id = Column(Integer, ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    field_name = Column(String, nullable=False, index=True)
+    raw_value = Column(Text, nullable=True)
+    normalized_value = Column(Float, nullable=True)
+    string_value = Column(String, nullable=True)
+    confidence = Column(Float, nullable=False, default=0.0)
+    source_page = Column(Integer, nullable=True, default=1)
+    extraction_method = Column(String, nullable=False, default="native_text")
+    is_verified = Column(Boolean, default=False, nullable=False)
+    is_manually_edited = Column(Boolean, default=False, nullable=False)
+    verified_value = Column(Text, nullable=True)
+    verified_by = Column(String, nullable=True)
+    verified_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow, nullable=False)
+    
+    # Relationships
+    document = relationship("Document", back_populates="fields")
 
 class Notification(Base):
     __tablename__ = "notifications"

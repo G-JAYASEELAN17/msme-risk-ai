@@ -73,8 +73,15 @@ def verify_token_claims(token: str) -> dict:
             headers={"WWW-Authenticate": "Bearer"}
         )
 
-    # Test token support for automated unit/integration tests
+    # Test token support for automated unit/integration tests (strictly gated by ALLOW_TEST_AUTH)
     if token.startswith("test_token:"):
+        if not settings.ALLOW_TEST_AUTH:
+            logger.warning("Authentication failed: test_token provided while ALLOW_TEST_AUTH is disabled.")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Test authentication tokens are disabled in production environment.",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
         parts = token.split(":")
         uid = parts[1] if len(parts) > 1 and parts[1] else "test_user_default"
         email = parts[2] if len(parts) > 2 and parts[2] else f"{uid}@test.local"

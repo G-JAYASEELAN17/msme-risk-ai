@@ -11,9 +11,13 @@ backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
+from app.config import settings
 from app.database.database import Base, get_db
 from app.main import app
 from app.database import models
+
+# Enable test authentication only in test execution
+settings.ALLOW_TEST_AUTH = True
 
 # In-memory SQLite engine for tests
 SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///:memory:"

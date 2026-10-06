@@ -1,6 +1,21 @@
 import { auth } from "./firebase";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
+const getApiBaseUrl = (): string => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envUrl && envUrl.trim()) {
+    return envUrl.trim().replace(/\/+$/, "");
+  }
+  if (import.meta.env.PROD) {
+    // When served on production web host or custom domain, default to /api or origin
+    if (typeof window !== "undefined" && window.location.origin) {
+      return `${window.location.origin}/api`;
+    }
+    return "/api";
+  }
+  return "http://localhost:8000/api";
+};
+
+const API_BASE_URL = getApiBaseUrl();
 const DEFAULT_TIMEOUT_MS = 60000;
 
 /**
@@ -151,10 +166,21 @@ export interface PredictionResponse {
   assessment_id: number;
   default_probability: number;
   risk_level: string;
+  risk_score: number;
   confidence: number;
+  data_quality_score: number;
+  data_quality_tier: string;
+  model_version: string;
   top_factors: string[];
   positive_factors: string[];
   risk_factors: string[];
+  factor_breakdown?: {
+    categories: Record<string, any[]>;
+    top_positive: any[];
+    top_negative: any[];
+    all_factors: any[];
+  };
+  analyst_summary?: string;
 }
 
 export interface SimulationRequest {
@@ -164,6 +190,9 @@ export interface SimulationRequest {
   simulated_monthly_cash_flow?: number;
   simulated_monthly_expenses?: number;
   simulated_existing_debt?: number;
+  simulated_loan_amount?: number;
+  simulated_loan_tenure?: number;
+  simulated_digital_transactions?: number;
   simulated_utility_score?: number;
   simulated_invoice_score?: number;
   simulated_defaults?: number;
@@ -172,10 +201,13 @@ export interface SimulationRequest {
 export interface PredictionResultOnly {
   default_probability: number;
   risk_level: string;
+  risk_score: number;
   confidence: number;
   top_factors: string[];
   positive_factors: string[];
   risk_factors: string[];
+  data_quality_score?: number;
+  model_version?: string;
 }
 
 export interface SimulationResponse {
@@ -187,6 +219,166 @@ export interface SimulationResponse {
   health_score_delta: number;
   risk_level_changed: boolean;
   summary_of_changes: string[];
+}
+
+export interface PredictionHistoryItem {
+  prediction_id: number;
+  assessment_id: number;
+  business_name: string;
+  industry: string;
+  default_probability: number;
+  risk_level: string;
+  risk_score: number;
+  confidence: number;
+  data_quality_score: number;
+  model_version: string;
+  created_at: string;
+}
+
+export interface RiskTrendResult {
+  assessment_id: number;
+  business_name: string;
+  current_probability: number;
+  previous_probability?: number | null;
+  trend: "IMPROVING" | "STABLE" | "INCREASING_RISK" | string;
+  trend_label: string;
+  delta: number;
+  description: string;
+}
+
+export interface CategorizedFactor {
+  feature: string;
+  display_name: string;
+  category: string;
+  value: any;
+  shap_value: number;
+  impact_direction: "positive" | "negative";
+  impact_magnitude: "high" | "medium" | "low";
+  explanation: string;
+}
+
+export interface PredictionExplanation {
+  prediction_id: number;
+  assessment_id: number;
+  business_name: string;
+  default_probability: number;
+  risk_level: string;
+  risk_score: number;
+  confidence: number;
+  model_confidence_label: string;
+  data_quality_score: number;
+  data_quality_tier: string;
+  model_version: string;
+  top_factors: string[];
+  positive_factors: string[];
+  risk_factors: string[];
+  factor_breakdown: {
+    categories: Record<string, CategorizedFactor[]>;
+    top_positive: CategorizedFactor[];
+    top_negative: CategorizedFactor[];
+    all_factors: CategorizedFactor[];
+  };
+  analyst_summary: string;
+  disclaimer: string;
+}
+
+export interface ModelMonitoringData {
+  time_window: {
+    filter: string;
+    days: number | null;
+    start_date: string | null;
+  };
+  model_metadata: {
+    model_name: string;
+    model_version: string;
+    algorithm: string;
+    feature_count: number;
+    training_date?: string | null;
+  };
+  volume_and_counts: {
+    total_predictions: number;
+    low_risk_count: number;
+    medium_risk_count: number;
+    high_risk_count: number;
+  };
+  distribution_percentages: {
+    low_risk_percentage: number;
+    medium_risk_percentage: number;
+    high_risk_percentage: number;
+  };
+  averages: {
+    average_default_probability: number;
+    average_risk_score: number;
+    average_confidence: number;
+    average_data_quality_score: number;
+  };
+  data_quality: {
+    average_score: number;
+    missing_data_rate_percentage: number;
+  };
+  feature_drift: {
+    disclaimer: string;
+    baseline_status: string;
+    features: Record<string, {
+      recent_stats: {
+        count: number;
+        mean: number | null;
+        median: number | null;
+        min: number | null;
+        max: number | null;
+        missing_rate: number;
+      };
+      baseline_stats: any | null;
+      drift_status: string;
+    }>;
+  };
+}
+
+export interface ModelCardData {
+  model_id: string;
+  model_name: string;
+  model_version: string;
+  algorithm: string;
+  purpose: string;
+  intended_use: string;
+  training_dataset: string;
+  training_date: string | null;
+  feature_count: number;
+  features: string[];
+  categorical_features: string[];
+  evaluation_metrics: {
+    roc_auc: number | null;
+    accuracy: number | null;
+    precision: number | null;
+    recall: number | null;
+    f1_score: number | null;
+    log_loss: number | null;
+  };
+  risk_thresholds: {
+    low: string;
+    medium: string;
+    high: string;
+  };
+  risk_score_bands: {
+    low: string;
+    medium: string;
+    high: string;
+  };
+  explainability: {
+    method: string;
+    categories: string[];
+  };
+  known_limitations: string[];
+  fairness_considerations: {
+    status: string;
+    notes: string[];
+  };
+  monitoring: {
+    metrics_tracked: string[];
+    drift_tracking: string;
+  };
+  human_review_requirement: string;
+  responsible_ai_disclaimer: string;
 }
 
 export interface AssessmentSummary {
@@ -332,6 +524,24 @@ export interface AssessmentCompareResult {
   comparison_summary: string[];
 }
 
+export interface ExtractedFieldItem {
+  id: number;
+  document_id: number;
+  field_name: string;
+  raw_value?: string | null;
+  normalized_value?: number | null;
+  string_value?: string | null;
+  confidence: number;
+  confidence_level: 'High' | 'Medium' | 'Low';
+  source_page: number;
+  extraction_method: string;
+  is_verified: boolean;
+  is_manually_edited: boolean;
+  verified_value?: string | null;
+  verified_by?: string | null;
+  verified_at?: string | null;
+}
+
 export interface DocumentItem {
   id: number;
   business_id?: number;
@@ -341,8 +551,47 @@ export interface DocumentItem {
   file_size: number;
   mime_type: string;
   status: string;
+  document_type?: string;
+  processing_status?: 'UPLOADED' | 'PROCESSING' | 'EXTRACTED' | 'REVIEW_REQUIRED' | 'VERIFIED' | 'FAILED' | string;
+  error_message?: string | null;
   extracted_data: Record<string, any>;
   created_at: string;
+  updated_at?: string | null;
+  download_url?: string | null;
+  field_count?: number;
+  verified_count?: number;
+}
+
+export interface DocumentExtractionDetails {
+  document_id: number;
+  document_name: string;
+  document_type: string;
+  processing_status: string;
+  overall_confidence: number;
+  confidence_level: 'High' | 'Medium' | 'Low';
+  fields: ExtractedFieldItem[];
+  warning: string;
+  can_use_in_assessment: boolean;
+}
+
+export interface UseInAssessmentResult {
+  document_id: number;
+  document_name: string;
+  document_type: string;
+  is_fully_verified: boolean;
+  assessment_input: {
+    annual_revenue?: number;
+    monthly_cash_flow?: number;
+    monthly_expenses?: number;
+    existing_debt?: number;
+    digital_transactions?: number;
+    utility_payment_score?: number;
+    invoice_payment_score?: number;
+    previous_defaults?: number;
+  };
+  missing_required_fields: string[];
+  can_use_in_assessment: boolean;
+  warning?: string | null;
 }
 
 export interface DocumentExtractResult {
@@ -492,6 +741,208 @@ export const api = {
       throw new Error(msg);
     }
     return res.json();
+  },
+
+  getPredictionHistory: async (params?: { limit?: number; offset?: number }): Promise<PredictionHistoryItem[]> => {
+    let endpoint = "/predictions/history";
+    if (params) {
+      const searchParams = new URLSearchParams();
+      if (params.limit !== undefined) searchParams.append("limit", String(params.limit));
+      if (params.offset !== undefined) searchParams.append("offset", String(params.offset));
+      const qs = searchParams.toString();
+      if (qs) endpoint += `?${qs}`;
+    }
+    const res = await fetchWithAuth(endpoint);
+    if (!res.ok) {
+      const msg = await parseErrorMessage(res, "Failed to load prediction history.");
+      throw new Error(msg);
+    }
+    return res.json();
+  },
+
+  getPredictionById: async (id: number): Promise<PredictionHistoryItem> => {
+    const res = await fetchWithAuth(`/predictions/${id}`);
+    if (!res.ok) {
+      const msg = await parseErrorMessage(res, `Failed to load prediction #${id}.`);
+      throw new Error(msg);
+    }
+    return res.json();
+  },
+
+  getPredictionExplanation: async (id: number): Promise<PredictionExplanation> => {
+    const res = await fetchWithAuth(`/predictions/${id}/explanation`);
+    if (!res.ok) {
+      const msg = await parseErrorMessage(res, `Failed to load explanation for prediction #${id}.`);
+      throw new Error(msg);
+    }
+    return res.json();
+  },
+
+  getPredictionRiskTrend: async (id: number): Promise<RiskTrendResult> => {
+    const res = await fetchWithAuth(`/predictions/${id}/risk-trend`);
+    if (!res.ok) {
+      const msg = await parseErrorMessage(res, `Failed to load risk trend for prediction #${id}.`);
+      throw new Error(msg);
+    }
+    return res.json();
+  },
+
+  // Admin Model Registry & Monitoring
+  getAdminModelMonitoring: async (days?: number | null): Promise<ModelMonitoringData> => {
+    let endpoint = "/admin/model-monitoring";
+    if (days !== undefined && days !== null) {
+      endpoint += `?days=${days}`;
+    }
+    const res = await fetchWithAuth(endpoint);
+    if (!res.ok) {
+      const msg = await parseErrorMessage(res, "Failed to load model monitoring metrics.");
+      throw new Error(msg);
+    }
+    return res.json();
+  },
+
+  getAdminModelCard: async (): Promise<ModelCardData> => {
+    const res = await fetchWithAuth("/admin/model-card");
+    if (!res.ok) {
+      const msg = await parseErrorMessage(res, "Failed to load model card specification.");
+      throw new Error(msg);
+    }
+    return res.json();
+  },
+
+  getAdminModelPerformance: async (): Promise<Record<string, any>> => {
+    const res = await fetchWithAuth("/admin/model-performance");
+    if (!res.ok) {
+      const msg = await parseErrorMessage(res, "Failed to load model performance metrics.");
+      throw new Error(msg);
+    }
+    return res.json();
+  },
+
+  getAdminModelDistribution: async (): Promise<Record<string, any>> => {
+    const res = await fetchWithAuth("/admin/model-distribution");
+    if (!res.ok) {
+      const msg = await parseErrorMessage(res, "Failed to load prediction risk distribution.");
+      throw new Error(msg);
+    }
+    return res.json();
+  },
+
+  // Safe Public Demo API (Unauthenticated, synthetic data only)
+  getDemoSample: async (): Promise<DemoSampleData> => {
+    const res = await fetch(`${API_BASE_URL}/demo/sample`);
+    if (!res.ok) throw new Error("Failed to load demo sample.");
+    const data = await res.json();
+    const s = data.sample || data;
+    return {
+      business_name: s.name || s.business_name || "Sri Lakshmi Engineering Works",
+      industry_sector: s.industry || s.industry_sector || "Manufacturing",
+      years_in_business: s.age ?? s.years_in_business ?? 6,
+      employees: s.employees ?? 28,
+      annual_revenue: s.annual_revenue ?? 2400000,
+      monthly_cash_flow: s.monthly_cash_flow ?? 150000,
+      monthly_expenses: s.monthly_expenses ?? 90000,
+      existing_debt: s.existing_debt ?? 210000,
+      utility_payment_score: s.utility_payment_score ?? 88,
+      past_defaults_count: s.previous_defaults ?? s.past_defaults_count ?? 0,
+      ...s,
+    };
+  },
+
+  assessDemoRisk: async (payload: DemoSampleData): Promise<DemoAssessmentResult> => {
+    const body = {
+      name: payload.business_name || payload.name || "Sri Lakshmi Engineering Works",
+      industry: payload.industry_sector || payload.industry || "Manufacturing",
+      age: payload.years_in_business ?? payload.age ?? 6,
+      employees: payload.employees ?? 28,
+      annual_revenue: payload.annual_revenue,
+      monthly_cash_flow: payload.monthly_cash_flow,
+      monthly_expenses: payload.monthly_expenses ?? 90000,
+      existing_debt: payload.existing_debt,
+      digital_transactions: payload.digital_transactions ?? 380,
+      utility_payment_score: payload.utility_payment_score ?? 88,
+      invoice_payment_score: payload.invoice_payment_score ?? 85,
+      previous_defaults: payload.past_defaults_count ?? payload.previous_defaults ?? 0,
+      loan_amount: payload.loan_amount ?? 150000,
+      loan_tenure: payload.loan_tenure ?? 24,
+    };
+    const res = await fetch(`${API_BASE_URL}/demo/assess`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error("Failed to run demo assessment.");
+    const result = await res.json();
+    return {
+      is_demo: true,
+      company_name: body.name,
+      risk_score: result.risk_score,
+      risk_tier: result.risk_tier,
+      default_probability: result.default_probability,
+      confidence_score: result.confidence_score,
+      explanation: {
+        positive_factors: result.explanation?.positive_factors || ["Strong utility payment consistency", "Positive operational cash flow"],
+        negative_factors: result.explanation?.negative_factors || ["High short-term debt leverage"]
+      },
+      factors: result.factors,
+    };
+  },
+
+  simulateDemoScenario: async (params: {
+    business_data: DemoSampleData;
+    revenue_change_pct?: number;
+    cash_flow_change_pct?: number;
+    debt_change_pct?: number;
+  }): Promise<DemoSimulationResult> => {
+    const base = params.business_data;
+    const revChange = params.revenue_change_pct ?? 0;
+    const cfChange = params.cash_flow_change_pct ?? 0;
+    const debtChange = params.debt_change_pct ?? 0;
+
+    const simRev = base.annual_revenue * (1 + revChange / 100);
+    const simCf = base.monthly_cash_flow * (1 + cfChange / 100);
+    const simDebt = base.existing_debt * (1 + debtChange / 100);
+
+    const body = {
+      baseline_data: {
+        name: base.business_name || base.name || "Sri Lakshmi Engineering Works",
+        industry: base.industry_sector || base.industry || "Manufacturing",
+        age: base.years_in_business ?? base.age ?? 6,
+        employees: base.employees ?? 28,
+        annual_revenue: base.annual_revenue,
+        monthly_cash_flow: base.monthly_cash_flow,
+        monthly_expenses: base.monthly_expenses ?? 90000,
+        existing_debt: base.existing_debt,
+        digital_transactions: base.digital_transactions ?? 380,
+        utility_payment_score: base.utility_payment_score ?? 88,
+        invoice_payment_score: base.invoice_payment_score ?? 85,
+        previous_defaults: base.past_defaults_count ?? base.previous_defaults ?? 0,
+        loan_amount: base.loan_amount ?? 150000,
+        loan_tenure: base.loan_tenure ?? 24,
+      },
+      simulated_annual_revenue: simRev,
+      simulated_monthly_cash_flow: simCf,
+      simulated_existing_debt: simDebt,
+    };
+
+    const res = await fetch(`${API_BASE_URL}/demo/simulate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error("Failed to run demo simulation.");
+    const sim = await res.json();
+    const baselineScore = sim.baseline?.risk_score ?? 25;
+    const simScore = sim.simulated?.risk_score ?? 25;
+    return {
+      is_demo: true,
+      is_hypothetical: true,
+      simulated_default_prob: sim.simulated?.default_probability ?? 0.08,
+      simulated_risk_score: simScore,
+      probability_delta: sim.probability_delta ?? (sim.simulated?.default_probability - sim.baseline?.default_probability),
+      risk_score_delta: simScore - baselineScore,
+      changes_applied: sim.changes_applied,
+    };
   },
 
   // Assessments & Dashboard
@@ -731,6 +1182,79 @@ export const api = {
     }
   },
 
+  getDocument: async (id: number): Promise<DocumentItem> => {
+    const res = await fetchWithAuth(`/documents/${id}`);
+    if (!res.ok) {
+      const msg = await parseErrorMessage(res, "Failed to load document.");
+      throw new Error(msg);
+    }
+    return res.json();
+  },
+
+  getDocumentStatus: async (id: number): Promise<{ id: number; processing_status: string; document_type: string; error_message?: string; field_count: number; verified_count: number }> => {
+    const res = await fetchWithAuth(`/documents/${id}/status`);
+    if (!res.ok) {
+      const msg = await parseErrorMessage(res, "Failed to load document status.");
+      throw new Error(msg);
+    }
+    return res.json();
+  },
+
+  getDocumentExtraction: async (id: number): Promise<DocumentExtractionDetails> => {
+    const res = await fetchWithAuth(`/documents/${id}/extraction`);
+    if (!res.ok) {
+      const msg = await parseErrorMessage(res, "Failed to load extracted fields.");
+      throw new Error(msg);
+    }
+    return res.json();
+  },
+
+  updateDocumentType: async (id: number, document_type: string): Promise<DocumentItem> => {
+    const res = await fetchWithAuth(`/documents/${id}/type`, {
+      method: "PATCH",
+      body: JSON.stringify({ document_type }),
+    });
+    if (!res.ok) {
+      const msg = await parseErrorMessage(res, "Failed to update document type.");
+      throw new Error(msg);
+    }
+    return res.json();
+  },
+
+  updateDocumentField: async (id: number, field_id: number, value: any): Promise<ExtractedFieldItem> => {
+    const res = await fetchWithAuth(`/documents/${id}/fields/${field_id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ value }),
+    });
+    if (!res.ok) {
+      const msg = await parseErrorMessage(res, "Failed to update field value.");
+      throw new Error(msg);
+    }
+    return res.json();
+  },
+
+  verifyDocumentData: async (id: number): Promise<{ id: number; processing_status: string; document_type: string; field_count: number; verified_count: number }> => {
+    const res = await fetchWithAuth(`/documents/${id}/verify`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      const msg = await parseErrorMessage(res, "Failed to verify document data.");
+      throw new Error(msg);
+    }
+    return res.json();
+  },
+
+  useInAssessment: async (id: number): Promise<UseInAssessmentResult> => {
+    const res = await fetchWithAuth(`/documents/${id}/use-in-assessment`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      const msg = await parseErrorMessage(res, "Failed to transfer verified document data.");
+      throw new Error(msg);
+    }
+    return res.json();
+  },
+
   // Notifications & Alerts
   getNotifications: async (): Promise<NotificationItem[]> => {
     const res = await fetchWithAuth("/notifications");
@@ -876,6 +1400,50 @@ export const api = {
     if (!res.ok) {
       return { query, businesses: [], assessments: [], documents: [] };
     }
-    return res.json();
   },
 };
+
+export interface DemoSampleData {
+  business_name?: string;
+  name?: string;
+  industry_sector?: string;
+  industry?: string;
+  years_in_business?: number;
+  age?: number;
+  employees?: number;
+  annual_revenue: number;
+  monthly_cash_flow: number;
+  monthly_expenses?: number;
+  existing_debt: number;
+  digital_transactions?: number;
+  utility_payment_score: number;
+  invoice_payment_score?: number;
+  past_defaults_count?: number;
+  previous_defaults?: number;
+  loan_amount?: number;
+  loan_tenure?: number;
+}
+
+export interface DemoAssessmentResult {
+  is_demo: boolean;
+  company_name: string;
+  risk_score: number;
+  risk_tier: string;
+  default_probability: number;
+  confidence_score: number;
+  explanation: {
+    positive_factors: string[];
+    negative_factors: string[];
+  };
+  factors?: Array<{ feature: string; impact: string; importance: number }>;
+}
+
+export interface DemoSimulationResult {
+  is_demo: boolean;
+  is_hypothetical: boolean;
+  simulated_default_prob: number;
+  simulated_risk_score: number;
+  probability_delta: number;
+  risk_score_delta: number;
+  changes_applied?: string[];
+}

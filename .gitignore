@@ -1,35 +1,55 @@
-# Node dependencies and build
+# Dependencies
 node_modules/
 dist/
 build/
+.vite/
+project/.vite/
+
+# Environment Variables & Secrets
 .env
 .env.*
 !.env.example
-
-# Python virtual environment and cache
-venv/
-.venv/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.pytest_cache/
-.mypy_cache/
-
-# Local databases and logs
-*.db
-*.db.backup_*
-*.backup_*
-*.log
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Secrets and Credentials
-backend/secrets/
 secrets/
+backend/secrets/
 *service-account*.json
 *.pem
 *.key
+*.id_rsa
+*.p8
+*.p12
 
+# Python Virtual Environments & Cache
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Local Databases, Uploads, Logs, and Backups
+*.db
+*.db-journal
+*.db.backup_*
+*.backup_*
+*.sqlite
+*.sqlite3
+backend/uploads/
+uploads/
+*.log
+
+# Editor & Scratch Files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+scratch/
+powershell.bat
+backend/powershell.bat
+frontend/powershell.bat
+.bolt/
+
+# Model Checkpoints (Temporary)
+*.tmp

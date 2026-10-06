@@ -1,0 +1,27 @@
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /how-it-works
+Allow: /features
+Allow: /responsible-ai
+Allow: /security
+Allow: /faq
+Allow: /contact
+Allow: /demo
+Allow: /privacy
+Allow: /terms
+
+# Disallow private application, admin, and user-isolated routes
+Disallow: /dashboard
+Disallow: /assessment
+Disallow: /prediction
+Disallow: /prediction-history
+Disallow: /businesses
+Disallow: /documents
+Disallow: /reports
+Disallow: /settings
+Disallow: /analyst
+Disallow: /admin/
+Disallow: /api/
+
+Sitemap: https://msme-risk-ai.vercel.app/sitemap.xml

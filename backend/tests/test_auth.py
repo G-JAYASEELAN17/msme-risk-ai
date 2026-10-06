@@ -63,3 +63,28 @@ def test_firebase_verify_id_token_success(client, db_session):
         assert user is not None
         assert user.email == "verified@firebase.org"
         assert user.name == "Verified Officer"
+
+def test_test_auth_disabled_rejects_test_token(client):
+    from app.config import settings
+    # Temporarily disable test auth
+    settings.ALLOW_TEST_AUTH = False
+    try:
+        response = client.get("/api/assessments", headers={"Authorization": "Bearer test_token:uid:email@test.com:Name"})
+        assert response.status_code == 401
+        assert "disabled in production" in response.json()["detail"].lower()
+    finally:
+        settings.ALLOW_TEST_AUTH = True
+
+def test_root_health_and_readiness_endpoints(client):
+    res_health = client.get("/health")
+    assert res_health.status_code == 200
+    data_health = res_health.json()
+    assert data_health["status"] == "healthy"
+    assert "database" in data_health
+    assert "database_type" in data_health
+
+    res_ready = client.get("/ready")
+    assert res_ready.status_code == 200
+    data_ready = res_ready.json()
+    assert data_ready["ready"] is True
+

@@ -14,13 +14,14 @@ import {
   FileText,
   Settings as SettingsIcon,
   ClipboardCheck,
+  History,
 } from "lucide-react";
 import Brand from "./Brand";
 import ConfirmationDialog from "./ui/ConfirmationDialog";
 import NotificationPopover from "./NotificationPopover";
 
 interface SidebarProps {
-  active?: "Overview" | "New assessment" | "Reports" | "Risk results" | "Businesses" | "Documents" | "Settings" | "Analyst";
+  active?: "Overview" | "New assessment" | "Reports" | "Risk results" | "Businesses" | "Documents" | "Settings" | "Analyst" | "Prediction history" | "Model monitoring" | "Model card";
 }
 
 export default function Sidebar({ active }: SidebarProps) {
@@ -59,6 +60,12 @@ export default function Sidebar({ active }: SidebarProps) {
       path: "/assessment",
       icon: PlusCircle,
       active: active === "New assessment" || location.pathname === "/assessment",
+    },
+    {
+      label: "Prediction History",
+      path: "/prediction-history",
+      icon: History,
+      active: active === "Prediction history" || location.pathname.startsWith("/prediction-history"),
     },
     {
       label: "Analyst Queue",
