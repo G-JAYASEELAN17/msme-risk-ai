@@ -193,6 +193,16 @@ export default function Prediction() {
           }
         />
 
+        {/* Responsible AI Transparency Disclosure */}
+        <div className="p-3.5 rounded-xl bg-blue-950/30 border border-blue-500/20 text-xs text-slate-300 flex items-start gap-3">
+          <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+          <p className="leading-relaxed">
+            <b className="text-white">AI-Assisted Credit Risk Assessment:</b> This system provides AI-assisted credit
+            risk decision support and does not autonomously approve or reject loans. Your AI-generated risk assessment
+            is available for analyst review alongside verified business documentation.
+          </p>
+        </div>
+
         {/* Counterfactual What-If Simulator Panel */}
         {showSimulator && (
           <div className="animate-fade-in p-6 bg-slate-900/90 border border-cyan-500/30 rounded-3xl shadow-2xl space-y-4">

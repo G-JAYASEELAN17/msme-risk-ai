@@ -28,7 +28,7 @@ def get_user_profile(
         uid=current_user.uid,
         email=current_user.email,
         name=current_user.name,
-        role=current_user.role or "analyst",
+        role=current_user.role or "user",
         settings=current_user.settings or {},
         created_at=current_user.created_at
     )
@@ -326,6 +326,7 @@ def get_admin_audit_logs(
         "items": [
             AuditLogResponse(
                 id=log.id,
+                user_id=log.user_id,
                 action=log.action,
                 resource_type=log.resource_type,
                 resource_id=log.resource_id,

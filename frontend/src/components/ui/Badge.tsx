@@ -63,11 +63,12 @@ export const Badge: React.FC<BadgeProps> = ({
   );
 };
 
-export const RiskBadge: React.FC<{ riskLevel: RiskLevel; size?: "sm" | "md" | "lg" }> = ({
+export const RiskBadge: React.FC<{ riskLevel?: RiskLevel; level?: RiskLevel; size?: "sm" | "md" | "lg" }> = ({
   riskLevel,
+  level: legacyLevel,
   size = "md",
 }) => {
-  const level = (riskLevel || "").toUpperCase();
+  const level = (riskLevel || legacyLevel || "").toUpperCase();
   const variantMap: Record<string, "low" | "medium" | "high"> = {
     LOW: "low",
     MEDIUM: "medium",
@@ -78,6 +79,27 @@ export const RiskBadge: React.FC<{ riskLevel: RiskLevel; size?: "sm" | "md" | "l
   return (
     <Badge variant={variant} size={size} dot>
       {level} RISK
+    </Badge>
+  );
+};
+
+export const StatusBadge: React.FC<{ status: string; size?: "sm" | "md" | "lg" }> = ({
+  status,
+  size = "md",
+}) => {
+  const s = (status || "").toLowerCase();
+  const variantMap: Record<string, "success" | "warning" | "danger" | "info" | "neutral"> = {
+    approved: "success",
+    needs_info: "warning",
+    rejected: "danger",
+    in_review: "info",
+    pending: "neutral",
+  };
+  const variant = variantMap[s] || "neutral";
+
+  return (
+    <Badge variant={variant} size={size} dot>
+      {s.replace("_", " ")}
     </Badge>
   );
 };

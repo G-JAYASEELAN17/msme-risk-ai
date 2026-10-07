@@ -44,6 +44,7 @@ def get_analyst_dashboard_stats(
     pending = db.query(models.Assessment).filter(models.Assessment.review_status == "pending").count()
     in_review = db.query(models.Assessment).filter(models.Assessment.review_status == "in_review").count()
     completed = db.query(models.Assessment).filter(models.Assessment.review_status.in_(["approved", "rejected"])).count()
+    needs_info = db.query(models.Assessment).filter(models.Assessment.review_status == "needs_info").count()
     
     low = db.query(models.Prediction).filter(models.Prediction.risk_level.ilike("LOW")).count()
     med = db.query(models.Prediction).filter(models.Prediction.risk_level.ilike("MEDIUM")).count()
@@ -56,7 +57,8 @@ def get_analyst_dashboard_stats(
         completed_reviews=completed,
         low_risk_assessments=low,
         medium_risk_assessments=med,
-        high_risk_assessments=high
+        high_risk_assessments=high,
+        needs_info_assessments=needs_info
     )
 
 @router.get("")

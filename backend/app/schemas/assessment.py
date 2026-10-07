@@ -32,6 +32,7 @@ class AnalystDashboardStatsResponse(BaseModel):
     low_risk_assessments: int
     medium_risk_assessments: int
     high_risk_assessments: int
+    needs_info_assessments: int = 0
 
 class PaginatedAssessmentsResponse(BaseModel):
     total: int

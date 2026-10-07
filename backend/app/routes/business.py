@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 from ..database.database import get_db
 from ..database import models
@@ -12,15 +12,18 @@ router = APIRouter()
 
 @router.get("", response_model=List[BusinessResponse])
 def get_businesses(
+    all_users: Optional[bool] = Query(False, description="Admin/Analyst only: View all platform businesses"),
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Returns all businesses owned by current authenticated user with assessment counts and latest risk scores.
+    Returns all businesses owned by current authenticated user, or all portfolio businesses if requested by an Analyst or Admin.
     """
-    businesses = db.query(models.Business).filter(
-        models.Business.user_id == current_user.uid
-    ).order_by(models.Business.created_at.desc()).all()
+    user_role = (current_user.role or "user").lower()
+    query = db.query(models.Business)
+    if not (all_users and user_role in ["admin", "analyst"]):
+        query = query.filter(models.Business.user_id == current_user.uid)
+    businesses = query.order_by(models.Business.created_at.desc()).all()
 
     responses = []
     for b in businesses:
@@ -108,10 +111,11 @@ def get_business_details(
     """
     Retrieves a business profile with its full assessment history timeline.
     """
-    business = db.query(models.Business).filter(
-        models.Business.id == id,
-        models.Business.user_id == current_user.uid
-    ).first()
+    user_role = (current_user.role or "user").lower()
+    query = db.query(models.Business).filter(models.Business.id == id)
+    if user_role not in ["admin", "analyst"]:
+        query = query.filter(models.Business.user_id == current_user.uid)
+    business = query.first()
 
     if not business:
         raise HTTPException(

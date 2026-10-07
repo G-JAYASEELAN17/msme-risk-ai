@@ -3,8 +3,11 @@ import {
   User, Bell, Shield, Activity, Save, Plus, Trash2, CheckCircle2, 
   AlertCircle, RefreshCw, Sliders, Users, Check, XCircle, ArrowRight,
   Search, ChevronLeft, ChevronRight, Filter, MessageSquare, AlertTriangle,
-  FileText, Clock, HelpCircle, CheckSquare, Eye
+  FileText, Clock, HelpCircle, CheckSquare, Eye, Building2, Phone, Mail,
+  Lock, MapPin, Key, LogOut
 } from 'lucide-react';
+import { sendPasswordResetEmail, signOut } from 'firebase/auth';
+import { auth } from '../services/firebase';
 import { 
   api, 
   UserProfile, 
@@ -12,7 +15,8 @@ import {
   AuditLogItem, 
   AdminUserItem, 
   AdminSystemStats,
-  AssessmentSummary 
+  AssessmentSummary,
+  BusinessProfile
 } from '../services/api';
 import Sidebar from '../components/Sidebar';
 import { useNavigate } from 'react-router-dom';
@@ -23,6 +27,30 @@ export default function Settings() {
   
   // Profile & general state
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [businesses, setBusinesses] = useState<BusinessProfile[]>([]);
+  const [primaryBiz, setPrimaryBiz] = useState<BusinessProfile | null>(null);
+
+  // Editable Profile fields
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  // Editable Business fields
+  const [bizName, setBizName] = useState('');
+  const [bizIndustry, setBizIndustry] = useState('');
+  const [bizType, setBizType] = useState('Private Limited');
+  const [bizAddress, setBizAddress] = useState('');
+  const [bizCity, setBizCity] = useState('');
+  const [bizState, setBizState] = useState('');
+  const [bizPincode, setBizPincode] = useState('');
+  const [bizAge, setBizAge] = useState<number>(3);
+  const [bizEmployees, setBizEmployees] = useState<number>(10);
+  const [savingBiz, setSavingBiz] = useState(false);
+
+  // Security state
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+
   const [alertRules, setAlertRules] = useState<AlertRuleItem[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
   const [adminUsers, setAdminUsers] = useState<AdminUserItem[]>([]);
@@ -87,14 +115,37 @@ export default function Settings() {
     try {
       setLoading(true);
       setErrorMsg(null);
-      const [userProfile, rules, logs] = await Promise.all([
+      const [userProfile, rules, logs, bizList] = await Promise.all([
         api.getUserProfile(),
         api.getAlertRules(),
         api.getAuditLogs(),
+        api.getBusinesses().catch(() => [] as BusinessProfile[]),
       ]);
       setProfile(userProfile);
       setAlertRules(rules);
       setAuditLogs(logs);
+      setBusinesses(bizList);
+
+      // Populate personal info
+      setFullName(userProfile.name || auth.currentUser?.displayName || '');
+      setPhone(userProfile.settings?.phone || auth.currentUser?.phoneNumber || '');
+
+      // Populate primary business info
+      if (bizList.length > 0) {
+        const b = bizList[0];
+        setPrimaryBiz(b);
+        setBizName(b.name || '');
+        setBizIndustry(b.industry || '');
+        setBizAge(b.age ?? 3);
+        setBizEmployees(b.employees ?? 10);
+        // Location parsing or fallback
+        const locParts = (b.location || '').split(',');
+        setBizCity(locParts[0]?.trim() || '');
+        setBizState(locParts[1]?.trim() || '');
+        setBizType(userProfile.settings?.business_type || 'Private Limited');
+        setBizAddress(userProfile.settings?.business_address || '');
+        setBizPincode(userProfile.settings?.business_pincode || '');
+      }
 
       if (userProfile.settings) {
         setPreferences(prev => ({
@@ -123,6 +174,91 @@ export default function Settings() {
       setErrorMsg(err.message || 'Failed to load user settings');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSavingProfile(true);
+      setErrorMsg(null);
+      await api.updateUserSettings({
+        phone: phone.trim(),
+      });
+      setSuccessMsg('Personal information updated successfully.');
+      setTimeout(() => setSuccessMsg(null), 3500);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to update personal profile.');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleSaveBusiness = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bizName.trim() || !bizIndustry.trim()) {
+      setErrorMsg('Business name and industry are required.');
+      return;
+    }
+    try {
+      setSavingBiz(true);
+      setErrorMsg(null);
+      const combinedLocation = [bizCity.trim(), bizState.trim()].filter(Boolean).join(', ') || 'Not provided';
+      
+      if (primaryBiz) {
+        const updated = await api.updateBusiness(primaryBiz.id, {
+          name: bizName.trim(),
+          industry: bizIndustry.trim(),
+          location: combinedLocation,
+          age: Number(bizAge) || 1,
+          employees: Number(bizEmployees) || 1,
+        });
+        setPrimaryBiz(updated);
+      } else {
+        const created = await api.createBusiness({
+          name: bizName.trim(),
+          industry: bizIndustry.trim(),
+          location: combinedLocation,
+          age: Number(bizAge) || 1,
+          employees: Number(bizEmployees) || 1,
+        });
+        setPrimaryBiz(created);
+        setBusinesses([created]);
+      }
+
+      // Also persist address, type, and pincode in settings
+      await api.updateUserSettings({
+        business_type: bizType,
+        business_address: bizAddress,
+        business_pincode: bizPincode,
+      });
+
+      setSuccessMsg('Business information saved successfully.');
+      setTimeout(() => setSuccessMsg(null), 3500);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to update business information.');
+    } finally {
+      setSavingBiz(false);
+    }
+  };
+
+  const handleSendPasswordReset = async () => {
+    const targetEmail = profile?.email || auth.currentUser?.email;
+    if (!targetEmail) {
+      setErrorMsg('No email address associated with this account.');
+      return;
+    }
+    try {
+      setResetLoading(true);
+      setErrorMsg(null);
+      await sendPasswordResetEmail(auth, targetEmail);
+      setResetSent(true);
+      setSuccessMsg(`Password reset email sent to ${targetEmail}. Please check your inbox.`);
+      setTimeout(() => setSuccessMsg(null), 5000);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to send password reset email.');
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -455,47 +591,306 @@ export default function Settings() {
             </div>
           ) : (
             <>
-              {/* 1. User Profile & Role */}
+              {/* 1. User Profile & Role (Section 17) */}
               {activeTab === 'profile' && (
-                <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-xl max-w-3xl">
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-cyan-500/20">
-                      {profile?.name?.charAt(0) || profile?.email?.charAt(0).toUpperCase() || 'U'}
+                <div className="space-y-6 max-w-4xl">
+                  {/* Personal Information */}
+                  <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-xl">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                      <div>
+                        <h3 className="text-lg font-bold text-white flex items-center gap-2 font-['Space_Grotesk']">
+                          <User size={18} className="text-cyan-400" />
+                          Personal Information
+                        </h3>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          Manage your contact details and account identity.
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-white">{profile?.name || 'MSME Enterprise User'}</h3>
-                      <p className="text-sm text-slate-400">{profile?.email}</p>
+
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-cyan-500/20 shrink-0 border border-cyan-400/20">
+                        {fullName.charAt(0) || profile?.name?.charAt(0) || profile?.email?.charAt(0).toUpperCase() || 'U'}
+                      </div>
+                      <div>
+                        <h4 className="text-base font-bold text-white">{fullName || profile?.name || 'MSME Business Owner'}</h4>
+                        <p className="text-xs text-slate-400">{profile?.email}</p>
+                        <span className="text-[10px] font-semibold text-cyan-400 uppercase tracking-wider block mt-1">
+                          Role: {profile?.role === 'admin' ? 'Super Admin' : profile?.role === 'analyst' ? 'Credit Risk Analyst' : 'MSME User'}
+                        </span>
+                      </div>
                     </div>
+
+                    <form onSubmit={handleSaveProfile} className="space-y-4 pt-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                        <div>
+                          <label className="block text-slate-400 mb-1 font-medium">Full Name</label>
+                          <input
+                            type="text"
+                            value={fullName}
+                            onChange={(e) => setFullName(e.target.value)}
+                            placeholder="Your full name"
+                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-400 text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-400 mb-1 font-medium">Email Address</label>
+                          <input
+                            type="email"
+                            value={profile?.email || ''}
+                            disabled
+                            className="w-full px-3.5 py-2.5 bg-slate-950/60 border border-slate-800/80 rounded-xl text-slate-400 cursor-not-allowed text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-400 mb-1 font-medium">Phone Number</label>
+                          <input
+                            type="tel"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            placeholder="+91 98765 43210"
+                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-400 text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-400 mb-1 font-medium">Profile Photo</label>
+                          <div className="px-3.5 py-2.5 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-400 text-xs flex items-center justify-between">
+                            <span>Default Avatar Initials</span>
+                            <span className="text-cyan-400 text-[11px] font-semibold">Active</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end pt-2">
+                        <button
+                          type="submit"
+                          disabled={savingProfile}
+                          className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-cyan-600 hover:bg-cyan-500 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                        >
+                          <Save size={14} />
+                          <span>{savingProfile ? 'Saving...' : 'Save Personal Information'}</span>
+                        </button>
+                      </div>
+                    </form>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-800">
-                    <div className="p-4 bg-slate-950/50 border border-slate-800/80 rounded-xl space-y-1">
-                      <span className="text-xs text-slate-400 uppercase font-semibold">User Role (RBAC)</span>
-                      <div className="flex items-center gap-2 text-white font-medium capitalize">
+                  {/* Business Information */}
+                  <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-xl">
+                    <div className="border-b border-slate-800 pb-4">
+                      <h3 className="text-lg font-bold text-white flex items-center gap-2 font-['Space_Grotesk']">
+                        <Building2 size={18} className="text-cyan-400" />
+                        Business Information
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Business details used for underwriting profiles and credit scoring.
+                      </p>
+                    </div>
+
+                    <form onSubmit={handleSaveBusiness} className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+                        <div>
+                          <label className="block text-slate-400 mb-1 font-medium">Business Name *</label>
+                          <input
+                            type="text"
+                            value={bizName}
+                            onChange={(e) => setBizName(e.target.value)}
+                            placeholder="e.g. Acme Manufacturing Ltd."
+                            required
+                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-400 text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-400 mb-1 font-medium">Industry Sector *</label>
+                          <input
+                            type="text"
+                            value={bizIndustry}
+                            onChange={(e) => setBizIndustry(e.target.value)}
+                            placeholder="e.g. Manufacturing, Retail, IT"
+                            required
+                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-400 text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-400 mb-1 font-medium">Business Type</label>
+                          <select
+                            value={bizType}
+                            onChange={(e) => setBizType(e.target.value)}
+                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-400 text-xs"
+                          >
+                            <option value="Private Limited">Private Limited (Pvt Ltd)</option>
+                            <option value="Sole Proprietorship">Sole Proprietorship</option>
+                            <option value="Partnership">Partnership Firm</option>
+                            <option value="LLP">Limited Liability Partnership (LLP)</option>
+                            <option value="Public Limited">Public Limited</option>
+                          </select>
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <label className="block text-slate-400 mb-1 font-medium">Business Address</label>
+                          <input
+                            type="text"
+                            value={bizAddress}
+                            onChange={(e) => setBizAddress(e.target.value)}
+                            placeholder="Industrial Area, Phase 2, Plot 14"
+                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-400 text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-400 mb-1 font-medium">City</label>
+                          <input
+                            type="text"
+                            value={bizCity}
+                            onChange={(e) => setBizCity(e.target.value)}
+                            placeholder="e.g. Coimbatore"
+                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-400 text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-400 mb-1 font-medium">State</label>
+                          <input
+                            type="text"
+                            value={bizState}
+                            onChange={(e) => setBizState(e.target.value)}
+                            placeholder="e.g. Tamil Nadu"
+                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-400 text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-400 mb-1 font-medium">Pincode</label>
+                          <input
+                            type="text"
+                            value={bizPincode}
+                            onChange={(e) => setBizPincode(e.target.value)}
+                            placeholder="641001"
+                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-400 text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-400 mb-1 font-medium">Business Age (Years)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={bizAge}
+                            onChange={(e) => setBizAge(Number(e.target.value))}
+                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-400 text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-400 mb-1 font-medium">Number of Employees</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="10000"
+                            value={bizEmployees}
+                            onChange={(e) => setBizEmployees(Number(e.target.value))}
+                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-400 text-xs"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end pt-2">
+                        <button
+                          type="submit"
+                          disabled={savingBiz}
+                          className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-cyan-600 hover:bg-cyan-500 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                        >
+                          <Save size={14} />
+                          <span>{savingBiz ? 'Saving...' : 'Save Business Information'}</span>
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* Account & Security */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Account Status */}
+                    <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
                         <Shield size={16} className="text-cyan-400" />
-                        <span className="font-bold text-cyan-300">{profile?.role || 'user'}</span>
+                        Account & Authentication
+                      </h4>
+
+                      <div className="space-y-3 text-xs">
+                        <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between">
+                          <span className="text-slate-400">Platform Role:</span>
+                          <span className="font-bold text-cyan-300 capitalize">
+                            {profile?.role === 'admin' ? 'Super Admin' : profile?.role === 'analyst' ? 'Credit Risk Analyst' : 'MSME User'}
+                          </span>
+                        </div>
+
+                        <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between">
+                          <span className="text-slate-400">Account Status:</span>
+                          <span className="font-bold text-emerald-400 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                            Active
+                          </span>
+                        </div>
+
+                        <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between">
+                          <span className="text-slate-400">Auth Method:</span>
+                          <span className="font-medium text-slate-200">Firebase Identity Token</span>
+                        </div>
+
+                        <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between">
+                          <span className="text-slate-400">User UID:</span>
+                          <span className="font-mono text-[11px] text-slate-300 truncate max-w-[140px]">
+                            {profile?.uid || 'usr_msme'}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="p-4 bg-slate-950/50 border border-slate-800/80 rounded-xl space-y-1">
-                      <span className="text-xs text-slate-400 uppercase font-semibold">User ID</span>
-                      <div className="text-xs font-mono text-slate-300 truncate">
-                        {profile?.uid || 'usr_default_msme'}
+                    {/* Security & Password */}
+                    <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl flex flex-col justify-between">
+                      <div>
+                        <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                          <Lock size={16} className="text-cyan-400" />
+                          Security Controls
+                        </h4>
+                        <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                          Manage login credentials and secure access to your MSME credit file.
+                        </p>
+
+                        <div className="mt-4 p-3.5 bg-slate-950/60 border border-slate-800 rounded-xl space-y-2 text-xs">
+                          <span className="font-medium text-white block">Reset Password</span>
+                          <p className="text-slate-400 text-[11px]">
+                            We will send a password reset link to <b className="text-slate-200">{profile?.email}</b>.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={handleSendPasswordReset}
+                            disabled={resetLoading || resetSent}
+                            className="mt-1 px-3 py-1.5 bg-cyan-950/40 hover:bg-cyan-900/50 text-cyan-300 border border-cyan-500/30 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
+                          >
+                            {resetLoading ? 'Sending...' : resetSent ? 'Email Sent ✓' : 'Send Password Reset Email'}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-slate-800 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            signOut(auth).then(() => navigate('/login/user'));
+                          }}
+                          className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-rose-400 hover:bg-rose-500/10 border border-rose-500/20 transition-colors flex items-center gap-1.5"
+                        >
+                          <LogOut size={14} />
+                          <span>Sign Out</span>
+                        </button>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="p-4 bg-cyan-950/20 border border-cyan-500/20 rounded-xl text-xs text-cyan-300 space-y-1">
-                    <strong>Role Permissions:</strong>
-                    {profile?.role === 'admin' && (
-                      <p>Administrator privileges: Full access to MSME portfolio, Underwriting Review queue, Admin User Role Management, System Health Stats, and Immutable System-wide Audit Logs.</p>
-                    )}
-                    {profile?.role === 'analyst' && (
-                      <p>Analyst privileges: Full access to MSME portfolio, loan assessments, underwriter review workflow, decision status updates, and underwriting notes.</p>
-                    )}
-                    {(!profile?.role || profile?.role === 'user') && (
-                      <p>MSME Borrower privileges: Manage own business entities, upload financial documents, create loan assessments, and view your own assessments and reports.</p>
-                    )}
                   </div>
                 </div>
               )}

@@ -405,6 +405,7 @@ export interface AnalystDashboardStats {
   low_risk_assessments: number;
   medium_risk_assessments: number;
   high_risk_assessments: number;
+  needs_info_assessments?: number;
 }
 
 export interface PaginatedAssessmentsResponse {
@@ -710,10 +711,63 @@ export interface SearchResults {
 // ----------------- API CLIENT -----------------
 
 export const api = {
-  getHealth: async () => {
-    const res = await fetchWithAuth("/health");
-    if (!res.ok) throw new Error("Backend service is offline.");
-    return res.json();
+  getHealth: async (): Promise<{
+    status: string;
+    application: string;
+    database: string;
+    database_type: string;
+    environment: string;
+    version: string;
+  }> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/health`);
+      if (!res.ok) {
+        return {
+          status: "degraded",
+          application: "degraded",
+          database: "unhealthy",
+          database_type: "unknown",
+          environment: "production",
+          version: "1.0.0",
+        };
+      }
+      return await res.json();
+    } catch {
+      return {
+        status: "offline",
+        application: "unreachable",
+        database: "unreachable",
+        database_type: "unknown",
+        environment: "production",
+        version: "1.0.0",
+      };
+    }
+  },
+
+  getReadiness: async (): Promise<{
+    ready: boolean;
+    database: string;
+    ml_model: string;
+    model_version?: string;
+    environment?: string;
+  }> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/health/ready`);
+      if (!res.ok) {
+        return {
+          ready: false,
+          database: "not_ready",
+          ml_model: "fallback_mode",
+        };
+      }
+      return await res.json();
+    } catch {
+      return {
+        ready: false,
+        database: "unreachable",
+        ml_model: "fallback_mode",
+      };
+    }
   },
 
   // Predictions & Simulations
@@ -1087,8 +1141,12 @@ export const api = {
   },
 
   // Businesses CRUD
-  getBusinesses: async (): Promise<BusinessProfile[]> => {
-    const res = await fetchWithAuth("/businesses");
+  getBusinesses: async (all_users?: boolean): Promise<BusinessProfile[]> => {
+    let endpoint = "/businesses";
+    if (all_users) {
+      endpoint += "?all_users=true";
+    }
+    const res = await fetchWithAuth(endpoint);
     if (!res.ok) {
       const msg = await parseErrorMessage(res, "Failed to load business profiles.");
       throw new Error(msg);
@@ -1400,6 +1458,7 @@ export const api = {
     if (!res.ok) {
       return { query, businesses: [], assessments: [], documents: [] };
     }
+    return res.json();
   },
 };
 

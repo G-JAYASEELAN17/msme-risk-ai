@@ -238,9 +238,9 @@ export default function Assessment() {
 
       <main className="main-content">
         <PageHeader
-          badge="Credit Underwriting"
-          title="MSME Loan Risk Assessment"
-          description="Enter verified business profile, cash-flow metrics, and alternative repayment indicators to evaluate default probability."
+          badge="AI-Assisted Credit Risk Assessment"
+          title="Submit Your Business for AI-Assisted Risk Assessment"
+          description="Enter verified business profile, cash-flow metrics, and alternative indicators. Your AI-generated risk assessment is submitted for analyst review."
         />
 
         {error && <ErrorMessage message={error} />}
@@ -718,7 +718,7 @@ export default function Assessment() {
                 <div className="flex items-start gap-3 p-3.5 rounded-xl bg-blue-950/30 border border-blue-500/20 text-xs text-slate-300">
                   <ShieldCheck className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
                   <p>
-                    By clicking <b>Run Prediction Model</b>, you certify that this MSME financial information has been collected with legitimate underwriting consent. The machine learning pipeline will securely evaluate default risk and generate an explainable score.
+                    <b>AI-Assisted Credit Risk Assessment:</b> This system provides AI-assisted credit risk decision support and does not autonomously approve or reject loans. Your AI-generated risk assessment will be submitted for analyst review alongside your business documents.
                   </p>
                 </div>
               </CardContent>
@@ -776,7 +776,7 @@ export default function Assessment() {
                   iconPosition="right"
                   onClick={handleSubmit}
                 >
-                  Run Prediction Model
+                  Submit for AI-Assisted Risk Assessment
                 </Button>
               )}
             </div>
