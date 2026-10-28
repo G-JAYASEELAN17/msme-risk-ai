@@ -9,7 +9,7 @@ export default function FeaturesPage() {
 
   const features = [
     {
-      icon: <Zap className="w-8 h-8 text-cyan-400" />,
+      icon: <Zap className="w-8 h-8 text-[#A78BFA]" />,
       title: "Real-Time AI Default Prediction",
       desc: "Computes 12-month default probability, risk tier, and model confidence in milliseconds using an optimized XGBoost classifier trained on multi-factor MSME datasets."
     },
@@ -41,7 +41,7 @@ export default function FeaturesPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#060b14] text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-[#0C0A1D] text-slate-100 flex flex-col">
       <SEO
         title="Features & Capabilities | MSME Risk AI"
         description="Explore the complete suite of MSME Risk AI features: XGBoost scoring, SHAP explainability, What-If simulation, analyst review workflow, and secure document storage."
@@ -51,7 +51,7 @@ export default function FeaturesPage() {
 
       <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-800 text-cyan-300 text-xs font-semibold mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#8B5CF6]/15 border border-[#383154] text-[#C4B5FD] text-xs font-semibold mb-4">
             Platform Capabilities
           </div>
           <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
@@ -64,7 +64,7 @@ export default function FeaturesPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
           {features.map((f, i) => (
-            <div key={i} className="p-6 rounded-2xl bg-[#091426] border border-[#182c47] hover:border-cyan-500/40 transition-all flex flex-col justify-between">
+            <div key={i} className="p-6 rounded-2xl bg-[#1C1933] border border-[#383154] hover:border-[#8B5CF6]/40 transition-all flex flex-col justify-between">
               <div>
                 <div className="p-3 w-fit rounded-xl bg-slate-800/80 border border-slate-700 mb-4">{f.icon}</div>
                 <h3 className="text-lg font-bold text-white mb-2">{f.title}</h3>
@@ -74,7 +74,7 @@ export default function FeaturesPage() {
           ))}
         </div>
 
-        <div className="p-8 rounded-2xl bg-gradient-to-r from-[#0c1a2e] to-[#0a1526] border border-[#182c47] text-center">
+        <div className="p-8 rounded-2xl bg-gradient-to-r from-[#1C1933] to-[#1C1933] border border-[#383154] text-center">
           <h2 className="text-2xl font-bold text-white mb-2">Ready to Assess Your First MSME Portfolio?</h2>
           <p className="text-sm text-slate-300 max-w-xl mx-auto mb-6">
             Create an account in 30 seconds and experience explainable credit risk modeling.
@@ -91,7 +91,7 @@ export default function FeaturesPage() {
         </div>
       </main>
 
-      <footer className="bg-[#040810] border-t border-[#101c2e] py-8 text-center text-xs text-slate-400">
+      <footer className="bg-[#0C0A1D] border-t border-[#1C1933] py-8 text-center text-xs text-slate-400">
         <p>&copy; {new Date().getFullYear()} MSME Risk AI. All rights reserved.</p>
       </footer>
     </div>

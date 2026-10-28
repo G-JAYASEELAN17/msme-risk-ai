@@ -53,36 +53,30 @@ function getNotificationIcon(type?: string) {
       );
     default:
       return (
-        <div className="p-1.5 rounded-lg bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 shrink-0">
+        <div className="p-1.5 rounded-lg bg-[#8B5CF6]/15 text-[#A78BFA] border border-[#8B5CF6]/30 shrink-0">
           <Bell className="w-3.5 h-3.5" />
         </div>
       );
   }
 }
 
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
 export default function NotificationPopover() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null);
 
   const buttonRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
-  const fetchNotifications = useCallback(async () => {
-    try {
-      const data = await api.getNotifications();
-      setNotifications(data);
-    } catch {
-      // Ignore background poll errors
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000); // Polling every 30s
-    return () => clearInterval(interval);
-  }, [fetchNotifications]);
+  const { data: notifications = [] } = useQuery<NotificationItem[]>({
+    queryKey: ["notifications"],
+    queryFn: () => api.getNotifications(),
+    staleTime: 60 * 1000,
+    refetchInterval: 60 * 1000, // Single global 60s background refresh (Phase 10)
+  });
 
   // Position calculation: strictly prevents overlapping sidebar and keeps inside viewport
   const updatePosition = useCallback(() => {
@@ -105,10 +99,10 @@ export default function NotificationPopover() {
       left = Math.max(12, Math.min(rect.right - panelWidth + 8, viewportWidth - panelWidth - 12));
     } else {
       // Desktop positioning:
-      // The sidebar boundary is at x = 256px.
+      // The sidebar boundary is at x = 270px.
       // The popover MUST open toward the RIGHT side of the bell and NEVER overlap the left sidebar.
-      // Maintain a safe gap of 14–16px from sidebar boundary (minimum left = 270px).
-      const sidebarWidth = 256;
+      // Maintain a safe gap of 14–16px from sidebar boundary (minimum left = 284px).
+      const sidebarWidth = 270;
       const minSafeDesktopLeft = sidebarWidth + 14;
 
       if (rect.left < sidebarWidth) {
@@ -174,8 +168,8 @@ export default function NotificationPopover() {
   const handleMarkRead = async (id: number) => {
     try {
       await api.markNotificationRead(id);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+      queryClient.setQueryData<NotificationItem[]>(["notifications"], (prev) =>
+        prev ? prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)) : []
       );
     } catch {
       // Ignore
@@ -185,7 +179,9 @@ export default function NotificationPopover() {
   const handleMarkAllRead = async () => {
     try {
       await api.markAllNotificationsRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      queryClient.setQueryData<NotificationItem[]>(["notifications"], (prev) =>
+        prev ? prev.map((n) => ({ ...n, is_read: true })) : []
+      );
     } catch {
       // Ignore
     }
@@ -194,7 +190,9 @@ export default function NotificationPopover() {
   const handleDelete = async (id: number) => {
     try {
       await api.deleteNotification(id);
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      queryClient.setQueryData<NotificationItem[]>(["notifications"], (prev) =>
+        prev ? prev.filter((n) => n.id !== id) : []
+      );
     } catch {
       // Ignore
     }
@@ -209,10 +207,10 @@ export default function NotificationPopover() {
         ref={buttonRef}
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className={`relative p-2 rounded-xl transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 ${
+        className={`relative p-2 rounded-xl transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[#A78BFA]/40 ${
           open
-            ? "bg-slate-800 text-cyan-300 border border-cyan-500/40 shadow-sm shadow-cyan-500/20"
-            : "text-slate-300 hover:text-white hover:bg-slate-800/80 border border-slate-700/50"
+            ? "bg-[#252141] text-[#A78BFA] border border-[#8B5CF6]/50 shadow-sm shadow-[#8B5CF6]/20"
+            : "text-[#B7B1D1] hover:text-[#F5F3FF] hover:bg-[#1C1933] border border-[#383154]"
         }`}
         aria-label="View notifications"
         aria-expanded={open}
@@ -220,7 +218,7 @@ export default function NotificationPopover() {
       >
         <Bell className={`w-4 h-4 transition-transform duration-150 ${open ? "scale-105" : ""}`} />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-rose-500 rounded-full ring-2 ring-[#081120] animate-pulse shadow-sm shadow-rose-500/30">
+          <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-rose-500 rounded-full ring-2 ring-[#1C1933] animate-pulse shadow-sm shadow-rose-500/30">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -239,18 +237,18 @@ export default function NotificationPopover() {
               width: `${coords.width}px`,
               maxHeight: "480px",
             }}
-            className="z-[9999] rounded-2xl bg-[#0a1324] border border-[#1e3454] shadow-2xl shadow-black/90 backdrop-blur-xl overflow-hidden flex flex-col animate-popover-in"
+            className="z-[9999] rounded-2xl bg-[#1C1933] border border-[#383154] shadow-2xl shadow-[#0C0A1D]/90 backdrop-blur-xl overflow-hidden flex flex-col animate-popover-in"
             role="dialog"
             aria-label="Notifications"
           >
             {/* Header: Title on Left, Mark All As Read Action on Right */}
-            <div className="flex items-center justify-between px-4 py-3 sm:px-4.5 sm:py-3.5 border-b border-[#16273f] bg-[#0c182c]/90 shrink-0">
+            <div className="flex items-center justify-between px-4 py-3 sm:px-4.5 sm:py-3.5 border-b border-[#383154] bg-[#252141]/90 shrink-0">
               <div className="flex items-center gap-2">
-                <span className="text-xs sm:text-sm font-bold text-white tracking-tight">
+                <span className="text-xs sm:text-sm font-bold text-[#F5F3FF] tracking-tight font-['Space_Grotesk']">
                   Notifications
                 </span>
                 {unreadCount > 0 && (
-                  <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                  <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[#8B5CF6]/15 text-[#A78BFA] border border-[#8B5CF6]/30">
                     {unreadCount} unread
                   </span>
                 )}
@@ -260,26 +258,26 @@ export default function NotificationPopover() {
                 <button
                   type="button"
                   onClick={handleMarkAllRead}
-                  className="text-[11px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-medium transition-colors hover:underline focus:outline-none"
+                  className="text-[11px] text-[#A78BFA] hover:text-[#F5F3FF] flex items-center gap-1 font-medium transition-colors hover:underline focus:outline-none"
                 >
                   <Check className="w-3 h-3" />
                   Mark all as read
                 </button>
               ) : (
-                <span className="text-[10px] text-slate-500 font-medium">All caught up</span>
+                <span className="text-[10px] text-[#B7B1D1] font-medium">All caught up</span>
               )}
             </div>
 
             {/* Scrollable Notification Items List */}
-            <div className="flex-1 overflow-y-auto max-h-[410px] divide-y divide-[#13233a]/80 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto max-h-[410px] divide-y divide-[#383154]/80 custom-scrollbar">
               {notifications.length === 0 ? (
                 /* Polished Empty State */
                 <div className="py-10 px-6 text-center flex flex-col items-center justify-center">
-                  <div className="w-11 h-11 rounded-2xl bg-[#0e1d33] border border-[#192f4f] flex items-center justify-center mb-3 text-slate-400 shadow-inner">
-                    <Bell className="w-5 h-5 text-slate-500" />
+                  <div className="w-11 h-11 rounded-2xl bg-[#151229] border border-[#383154] flex items-center justify-center mb-3 text-[#B7B1D1] shadow-inner">
+                    <Bell className="w-5 h-5 text-[#B7B1D1]" />
                   </div>
-                  <p className="text-xs sm:text-sm font-semibold text-white">No notifications yet</p>
-                  <p className="text-[11px] text-slate-400 mt-1 max-w-[230px] leading-relaxed">
+                  <p className="text-xs sm:text-sm font-bold text-[#F5F3FF] font-['Space_Grotesk']">No notifications yet</p>
+                  <p className="text-[11px] text-[#B7B1D1] mt-1 max-w-[230px] leading-relaxed">
                     You're all caught up with your assessments, risk alerts, and review statuses.
                   </p>
                 </div>
@@ -291,13 +289,13 @@ export default function NotificationPopover() {
                       key={n.id}
                       className={`p-3.5 sm:p-4 flex items-start gap-3 transition-colors duration-150 relative ${
                         isUnread
-                          ? "bg-[#0d1e38]/70 hover:bg-[#102444]"
-                          : "bg-transparent hover:bg-[#0c182c]/60 opacity-80 hover:opacity-100"
+                          ? "bg-[#252141]/80 hover:bg-[#30294D]"
+                          : "bg-transparent hover:bg-[#252141]/50 opacity-80 hover:opacity-100"
                       }`}
                     >
                       {/* Left accent bar for unread items */}
                       {isUnread && (
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-cyan-400 rounded-r" />
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#8B5CF6] rounded-r" />
                       )}
 
                       {/* Icon */}
@@ -317,25 +315,25 @@ export default function NotificationPopover() {
                         <div className="flex items-center justify-between gap-1 mb-0.5">
                           <p
                             className={`text-xs truncate ${
-                              isUnread ? "text-white font-bold" : "text-slate-200 font-medium"
+                              isUnread ? "text-[#F5F3FF] font-bold" : "text-[#F5F3FF] font-medium"
                             }`}
                           >
                             {n.title}
                           </p>
                           {isUnread && (
                             <span
-                              className="w-2 h-2 rounded-full bg-cyan-400 shrink-0 shadow-sm shadow-cyan-400/50"
+                              className="w-2 h-2 rounded-full bg-[#8B5CF6] shrink-0 shadow-sm shadow-[#8B5CF6]/50"
                               title="Unread"
                             />
                           )}
                         </div>
 
-                        <p className="text-[11px] text-slate-300 leading-relaxed line-clamp-2">
+                        <p className="text-[11px] text-[#B7B1D1] leading-relaxed line-clamp-2">
                           {n.message}
                         </p>
 
                         <div className="flex items-center justify-between mt-2 pt-0.5">
-                          <span className="text-[10px] text-slate-400 font-medium">
+                          <span className="text-[10px] text-[#B7B1D1] font-medium">
                             {formatTimeAgo(n.created_at)}
                           </span>
 
@@ -347,7 +345,7 @@ export default function NotificationPopover() {
                               <button
                                 type="button"
                                 onClick={() => handleMarkRead(n.id)}
-                                className="p-1 text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded transition-colors"
+                                className="p-1 text-[#B7B1D1] hover:text-[#A78BFA] hover:bg-[#8B5CF6]/10 rounded transition-colors"
                                 title="Mark as read"
                                 aria-label="Mark as read"
                               >
@@ -357,7 +355,7 @@ export default function NotificationPopover() {
                             <button
                               type="button"
                               onClick={() => handleDelete(n.id)}
-                              className="p-1 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded transition-colors"
+                              className="p-1 text-[#B7B1D1] hover:text-[#F87171] hover:bg-rose-500/10 rounded transition-colors"
                               title="Delete notification"
                               aria-label="Delete notification"
                             >

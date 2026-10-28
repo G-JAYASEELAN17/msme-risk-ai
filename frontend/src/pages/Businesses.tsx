@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { onAuthStateChanged } from "firebase/auth";
 import {
   Building2,
   PlusCircle,
@@ -32,17 +31,32 @@ import ErrorMessage from "../components/ErrorMessage";
 import AssessmentCompareModal from "../components/AssessmentCompareModal";
 import { CardSkeleton } from "../components/ui/Skeleton";
 import { useToast } from "../components/ui/Toast";
+import { useAuthRole } from "../context/AuthRoleContext";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export default function Businesses() {
   const navigate = useNavigate();
   const toast = useToast();
+  const queryClient = useQueryClient();
+  const { user } = useAuthRole();
   const [searchParams] = useSearchParams();
   const businessIdParam = searchParams.get("id");
 
-  const [businesses, setBusinesses] = useState<BusinessProfile[]>([]);
   const [selectedBusiness, setSelectedBusiness] = useState<BusinessProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+
+  const {
+    data: businesses = [],
+    isLoading: loading,
+    error: queryError,
+    refetch: fetchBusinesses,
+  } = useQuery<BusinessProfile[]>({
+    queryKey: ["businesses"],
+    queryFn: () => api.getBusinesses(),
+    staleTime: 30 * 1000,
+    enabled: !!user,
+  });
+
+  const error = queryError ? (queryError as Error).message : "";
 
   // Create / Edit Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -63,41 +77,15 @@ export default function Businesses() {
   const [compareModalOpen, setCompareModalOpen] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        navigate("/login");
-      } else {
-        fetchBusinesses();
-      }
-    });
-    return () => unsubscribe();
-  }, [navigate]);
-
-  useEffect(() => {
     if (businessIdParam && businesses.length > 0) {
       const match = businesses.find((b) => b.id === Number(businessIdParam));
       if (match) {
         fetchBusinessDetails(match.id);
       }
+    } else if (businesses.length > 0 && !selectedBusiness) {
+      fetchBusinessDetails(businesses[0].id);
     }
-  }, [businessIdParam, businesses]);
-
-  const fetchBusinesses = async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const data = await api.getBusinesses();
-      setBusinesses(data);
-      if (data.length > 0 && !selectedBusiness && !businessIdParam) {
-        fetchBusinessDetails(data[0].id);
-      }
-    } catch (err: any) {
-      console.error("Fetch businesses error:", err);
-      setError(err?.message || "Failed to load business profiles.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [businessIdParam, businesses, selectedBusiness]);
 
   const fetchBusinessDetails = async (id: number) => {
     try {
@@ -182,7 +170,7 @@ export default function Businesses() {
 
   return (
     <div className="app-layout">
-      <Sidebar active="New assessment" />
+      <Sidebar active="My Business" />
 
       <main className="main-content">
         <PageHeader
@@ -236,8 +224,8 @@ export default function Businesses() {
                     onClick={() => fetchBusinessDetails(b.id)}
                     className={`p-4 rounded-2xl border transition-all cursor-pointer ${
                       isSelected
-                        ? "bg-[#0d1c33] border-cyan-500/50 shadow-lg shadow-cyan-950/40"
-                        : "bg-[#081220] border-[#15253d] hover:border-[#263e63]"
+                        ? "bg-[#1C1933] border-[#8B5CF6]/50 shadow-lg shadow-[#0C0A1D]/40"
+                        : "bg-[#0C0A1D] border-[#383154] hover:border-[#383154]"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -250,9 +238,9 @@ export default function Businesses() {
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#13233a] text-xs text-slate-400">
+                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#252141] text-xs text-slate-400">
                       <span className="flex items-center gap-1">
-                        <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                        <Layers className="w-3.5 h-3.5 text-[#A78BFA]" />
                         {b.total_assessments} assessment(s)
                       </span>
                       <span className="flex items-center gap-1">
@@ -274,7 +262,7 @@ export default function Businesses() {
                     <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div>
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold">
+                          <div className="w-10 h-10 rounded-xl bg-[#8B5CF6]/10 border border-[#8B5CF6]/20 text-[#A78BFA] flex items-center justify-center font-bold">
                             <Building2 className="w-5 h-5" />
                           </div>
                           <div>
@@ -305,11 +293,11 @@ export default function Businesses() {
                     </CardHeader>
 
                     <CardContent>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-[#081122] border border-[#14233a] text-xs mb-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-[#0C0A1D] border border-[#383154] text-xs mb-4">
                         <div>
                           <span className="text-slate-400 block mb-0.5">Location</span>
                           <span className="font-semibold text-white flex items-center gap-1">
-                            <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+                            <MapPin className="w-3.5 h-3.5 text-[#A78BFA]" />
                             {selectedBusiness.location || "United States"}
                           </span>
                         </div>
@@ -381,10 +369,10 @@ export default function Businesses() {
                             <div
                               key={a.id}
                               onClick={() => navigate(`/reports?id=${a.id}`)}
-                              className="p-4 rounded-xl bg-[#081222] border border-[#14233a] hover:border-cyan-500/40 transition-colors cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                              className="p-4 rounded-xl bg-[#0C0A1D] border border-[#383154] hover:border-[#8B5CF6]/40 transition-colors cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                             >
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-[#0e1d33] text-cyan-400 flex items-center justify-center font-bold text-xs border border-[#1d3559]">
+                                <div className="w-8 h-8 rounded-lg bg-[#252141] text-[#A78BFA] flex items-center justify-center font-bold text-xs border border-[#383154]">
                                   0{selectedBusiness.assessments!.length - i}
                                 </div>
                                 <div>
@@ -496,7 +484,7 @@ export default function Businesses() {
               onChange={(e) => setDescription(e.target.value)}
             />
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-[#16273f]">
+            <div className="flex justify-end gap-3 pt-4 border-t border-[#383154]">
               <Button
                 type="button"
                 variant="outline"

@@ -17,11 +17,55 @@ DOCUMENT_TYPES = [
     "BALANCE_SHEET",
     "INCOME_STATEMENT",
     "LOAN_STATEMENT",
+    "PAN_CARD",
+    "AADHAAR_CARD",
+    "BUSINESS_REGISTRATION",
+    "FINANCIAL_STATEMENTS",
     "OTHER"
 ]
 
 # Weighted indicator terms for each financial document category
 CATEGORY_PATTERNS: Dict[str, Dict[str, float]] = {
+    "PAN_CARD": {
+        "permanent account number": 5.0,
+        "income tax department": 4.5,
+        "govt. of india": 3.0,
+        "father's name": 3.5,
+        "date of birth": 3.0,
+        "pan card": 4.0,
+    },
+    "AADHAAR_CARD": {
+        "unique identification authority of india": 5.0,
+        "uidai": 5.0,
+        "aadhaar": 5.0,
+        "enrolment no": 4.0,
+        "vid": 3.5,
+        "mera aadhaar": 4.0,
+        "government of india": 3.0,
+    },
+    "BUSINESS_REGISTRATION": {
+        "udyam registration": 5.0,
+        "udyam": 4.5,
+        "ministry of micro, small": 5.0,
+        "certificate of incorporation": 5.0,
+        "registrar of companies": 4.5,
+        "shop and establishment": 4.5,
+        "partnership deed": 4.5,
+        "trade license": 4.0,
+        "msme registration": 4.5,
+        "cin": 3.5,
+    },
+    "FINANCIAL_STATEMENTS": {
+        "income tax return": 5.0,
+        "itr-v": 5.0,
+        "indian income tax return": 5.0,
+        "acknowledgement number": 4.0,
+        "assessment year": 4.0,
+        "gross total income": 4.5,
+        "audited financial statement": 5.0,
+        "independent auditor's report": 5.0,
+        "chartered accountants": 4.0,
+    },
     "BANK_STATEMENT": {
         "bank statement": 4.0,
         "account statement": 4.0,

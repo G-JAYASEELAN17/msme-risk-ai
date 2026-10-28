@@ -12,34 +12,29 @@ import {
 import { api } from "../services/api";
 import Button from "./ui/Button";
 
+import { useAuthRole } from "../context/AuthRoleContext";
+
 interface OnboardingModalProps {
   onComplete?: () => void;
 }
 
 export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
+  const { userProfile, refreshProfile } = useAuthRole();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    checkOnboardingStatus();
-  }, []);
-
-  const checkOnboardingStatus = async () => {
-    try {
-      const profile = await api.getUserProfile();
-      if (!profile.settings?.onboarding_completed) {
-        setOpen(true);
-      }
-    } catch {
-      //
+    if (userProfile && !userProfile.settings?.onboarding_completed) {
+      setOpen(true);
     }
-  };
+  }, [userProfile]);
 
   const handleFinish = async () => {
     try {
       setSaving(true);
       await api.updateUserSettings({ onboarding_completed: true });
+      await refreshProfile();
       setOpen(false);
       if (onComplete) onComplete();
     } catch {
@@ -100,7 +95,7 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
         aria-hidden="true"
       />
 
-      <div className="relative w-full max-w-lg rounded-3xl bg-[#0d1a2f] border border-[#23436d] p-6 sm:p-8 shadow-2xl shadow-black/95 z-10 animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-lg rounded-3xl bg-[#1C1933] border border-[#383154] p-6 sm:p-8 shadow-2xl shadow-black/95 z-10 animate-in zoom-in-95 duration-200">
         <button
           onClick={handleFinish}
           className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
@@ -115,7 +110,7 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
             <div
               key={s.step}
               className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                s.step <= step ? "bg-gradient-to-r from-cyan-400 to-blue-500" : "bg-[#162740]"
+                s.step <= step ? "bg-gradient-to-r from-[#8B5CF6] to-blue-500" : "bg-[#252141]"
               }`}
             />
           ))}
@@ -123,11 +118,11 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
 
         {/* Content */}
         <div className="flex flex-col items-center text-center my-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600/20 to-cyan-500/20 border border-cyan-500/30 text-cyan-400 flex items-center justify-center mb-5 shadow-xl shadow-cyan-950/40">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600/20 to-[#8B5CF6]/20 border border-[#8B5CF6]/30 text-[#A78BFA] flex items-center justify-center mb-5 shadow-xl shadow-[#0C0A1D]/40">
             <CurrentIcon className="w-8 h-8" />
           </div>
 
-          <span className="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-1">
+          <span className="text-xs font-bold uppercase tracking-widest text-[#A78BFA] mb-1">
             {current.badge} • Step 0{step} of 05
           </span>
 
@@ -141,7 +136,7 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between pt-4 border-t border-[#182d4d] gap-3">
+        <div className="flex items-center justify-between pt-4 border-t border-[#383154] gap-3">
           <button
             type="button"
             onClick={handleFinish}

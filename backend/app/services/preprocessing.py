@@ -26,6 +26,13 @@ class PreprocessingService:
                 logger.warning(f"Preprocessor not found at {settings.PREPROCESSOR_PATH}")
                 return None
             self.preprocessor = joblib.load(settings.PREPROCESSOR_PATH)
+            # Ensure compatibility across scikit-learn versions for unpickled SimpleImputer instances
+            if hasattr(self.preprocessor, "transformers_"):
+                for _, trans, _ in self.preprocessor.transformers_:
+                    if hasattr(trans, "steps"):
+                        for _, step in trans.steps:
+                            if hasattr(step, "statistics_") and not hasattr(step, "_fill_dtype"):
+                                step._fill_dtype = step.statistics_.dtype
         return self.preprocessor
 
     def preprocess_single(self, data_dict: dict):

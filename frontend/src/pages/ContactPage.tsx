@@ -21,7 +21,7 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#060b14] text-slate-100 flex flex-col selection:bg-cyan-500/20">
+    <div className="min-h-screen bg-[#151229] text-slate-100 flex flex-col selection:bg-[#8B5CF6]/20">
       <SEO
         title="Contact Us | MSME Risk AI"
         description="Get in touch with the MSME Risk AI team for institutional inquiries, pilot onboarding, enterprise integrations, or security disclosures."
@@ -31,7 +31,7 @@ export default function ContactPage() {
 
       <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-800 text-cyan-300 text-xs font-semibold mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#8B5CF6]/15 border border-[#383154] text-[#C4B5FD] text-xs font-semibold mb-4">
             <Mail className="w-4 h-4" /> Institutional Partnerships & Support
           </div>
           <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
@@ -45,9 +45,9 @@ export default function ContactPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-16">
           {/* Contact Details Card */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="p-6 rounded-2xl bg-[#091426] border border-[#182c47]">
+            <div className="p-6 rounded-2xl bg-[#1C1933] border border-[#383154]">
               <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-cyan-400" /> Enterprise Inquiries
+                <Building2 className="w-5 h-5 text-[#A78BFA]" /> Enterprise Inquiries
               </h3>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4">
                 Partner with us for customized credit policy tuning, batch scoring APIs, and loan origination system (LOS) integrations.
@@ -58,7 +58,7 @@ export default function ContactPage() {
               </div>
             </div>
 
-            <div className="p-6 rounded-2xl bg-[#091426] border border-[#182c47]">
+            <div className="p-6 rounded-2xl bg-[#1C1933] border border-[#383154]">
               <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-emerald-400" /> Responsible Disclosure
               </h3>
@@ -73,7 +73,7 @@ export default function ContactPage() {
           </div>
 
           {/* Form */}
-          <div className="lg:col-span-2 p-8 rounded-2xl bg-[#091426] border border-[#182c47]">
+          <div className="lg:col-span-2 p-8 rounded-2xl bg-[#1C1933] border border-[#383154]">
             {submitted ? (
               <div className="text-center py-12">
                 <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto mb-4 text-emerald-400">
@@ -90,7 +90,7 @@ export default function ContactPage() {
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
                 <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5 text-cyan-400" /> Send an Inquiry
+                  <MessageSquare className="w-5 h-5 text-[#A78BFA]" /> Send an Inquiry
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -103,7 +103,7 @@ export default function ContactPage() {
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="Jane Doe"
-                      className="w-full px-3.5 py-2.5 rounded-lg bg-[#060d19] border border-[#1d3354] text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-500"
+                      className="w-full px-3.5 py-2.5 rounded-lg bg-[#0C0A1D] border border-[#1d3354] text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#8B5CF6]"
                     />
                   </div>
                   <div>
@@ -116,7 +116,7 @@ export default function ContactPage() {
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       placeholder="jane@institution.com"
-                      className="w-full px-3.5 py-2.5 rounded-lg bg-[#060d19] border border-[#1d3354] text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-500"
+                      className="w-full px-3.5 py-2.5 rounded-lg bg-[#0C0A1D] border border-[#1d3354] text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#8B5CF6]"
                     />
                   </div>
                 </div>
@@ -131,7 +131,7 @@ export default function ContactPage() {
                       value={formData.organization}
                       onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
                       placeholder="Bank, NBFC, or Fintech"
-                      className="w-full px-3.5 py-2.5 rounded-lg bg-[#060d19] border border-[#1d3354] text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-500"
+                      className="w-full px-3.5 py-2.5 rounded-lg bg-[#0C0A1D] border border-[#1d3354] text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#8B5CF6]"
                     />
                   </div>
                   <div>
@@ -141,7 +141,7 @@ export default function ContactPage() {
                     <select
                       value={formData.role}
                       onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-lg bg-[#060d19] border border-[#1d3354] text-white text-sm focus:outline-none focus:border-cyan-500"
+                      className="w-full px-3.5 py-2.5 rounded-lg bg-[#0C0A1D] border border-[#1d3354] text-white text-sm focus:outline-none focus:border-[#8B5CF6]"
                     >
                       <option value="Lender / Underwriter">Credit Officer / Underwriter</option>
                       <option value="Risk Executive">Head of Risk / CRO</option>
@@ -162,7 +162,7 @@ export default function ContactPage() {
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     placeholder="Tell us about your lending volume, requirements, or integration timelines..."
-                    className="w-full px-3.5 py-2.5 rounded-lg bg-[#060d19] border border-[#1d3354] text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-500"
+                    className="w-full px-3.5 py-2.5 rounded-lg bg-[#0C0A1D] border border-[#1d3354] text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#8B5CF6]"
                   />
                 </div>
 
@@ -175,7 +175,7 @@ export default function ContactPage() {
         </div>
       </main>
 
-      <footer className="bg-[#040810] border-t border-[#101c2e] py-8 text-center text-xs text-slate-400">
+      <footer className="bg-[#0C0A1D] border-t border-[#1C1933] py-8 text-center text-xs text-slate-400">
         <p>&copy; {new Date().getFullYear()} MSME Risk AI. Institutional Credit Decision Support.</p>
       </footer>
     </div>

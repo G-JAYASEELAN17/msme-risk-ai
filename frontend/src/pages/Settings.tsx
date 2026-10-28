@@ -19,11 +19,41 @@ import {
   BusinessProfile
 } from '../services/api';
 import Sidebar from '../components/Sidebar';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuthRole } from '../context/AuthRoleContext';
+import { Skeleton, CardSkeleton, TableSkeleton } from '../components/ui/Skeleton';
+
+type SettingsTab = 'profile' | 'alerts' | 'preferences' | 'audit' | 'admin_users' | 'analyst_queue';
+const VALID_TABS: SettingsTab[] = ['profile', 'alerts', 'preferences', 'audit', 'admin_users', 'analyst_queue'];
 
 export default function Settings() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'profile' | 'alerts' | 'preferences' | 'audit' | 'admin_users' | 'analyst_queue'>('profile');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { userProfile: authProfile, refreshProfile } = useAuthRole();
+
+  // Derive initial tab from URL query parameter ?tab=...
+  const tabFromUrl = searchParams.get('tab') as SettingsTab | null;
+  const initialTab: SettingsTab = tabFromUrl && VALID_TABS.includes(tabFromUrl) ? tabFromUrl : 'profile';
+  const [activeTab, setActiveTabState] = useState<SettingsTab>(initialTab);
+
+  // Sync activeTab when URL search params change (e.g. browser back/forward)
+  useEffect(() => {
+    const urlTab = searchParams.get('tab') as SettingsTab | null;
+    const resolvedTab: SettingsTab = urlTab && VALID_TABS.includes(urlTab) ? urlTab : 'profile';
+    if (resolvedTab !== activeTab) {
+      setActiveTabState(resolvedTab);
+    }
+  }, [searchParams]);
+
+  // Wrapper that updates both state and URL
+  const setActiveTab = (tab: SettingsTab) => {
+    setActiveTabState(tab);
+    if (tab === 'profile') {
+      setSearchParams({}, { replace: true });
+    } else {
+      setSearchParams({ tab }, { replace: true });
+    }
+  };
   
   // Profile & general state
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -93,7 +123,12 @@ export default function Settings() {
     weekly_digest: false,
   });
 
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [profileLoading, setProfileLoading] = useState<boolean>(!authProfile);
+  const [bizLoading, setBizLoading] = useState<boolean>(true);
+  const [rulesLoading, setRulesLoading] = useState<boolean>(true);
+  const [auditLoading, setAuditLoading] = useState<boolean>(true);
+  const [adminUsersLoading, setAdminUsersLoading] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -111,70 +146,100 @@ export default function Settings() {
 
   const [showRuleModal, setShowRuleModal] = useState(false);
 
-  const loadAllData = async () => {
-    try {
-      setLoading(true);
-      setErrorMsg(null);
-      const [userProfile, rules, logs, bizList] = await Promise.all([
-        api.getUserProfile(),
-        api.getAlertRules(),
-        api.getAuditLogs(),
-        api.getBusinesses().catch(() => [] as BusinessProfile[]),
-      ]);
-      setProfile(userProfile);
-      setAlertRules(rules);
-      setAuditLogs(logs);
-      setBusinesses(bizList);
-
-      // Populate personal info
-      setFullName(userProfile.name || auth.currentUser?.displayName || '');
-      setPhone(userProfile.settings?.phone || auth.currentUser?.phoneNumber || '');
-
-      // Populate primary business info
-      if (bizList.length > 0) {
-        const b = bizList[0];
-        setPrimaryBiz(b);
-        setBizName(b.name || '');
-        setBizIndustry(b.industry || '');
-        setBizAge(b.age ?? 3);
-        setBizEmployees(b.employees ?? 10);
-        // Location parsing or fallback
-        const locParts = (b.location || '').split(',');
-        setBizCity(locParts[0]?.trim() || '');
-        setBizState(locParts[1]?.trim() || '');
-        setBizType(userProfile.settings?.business_type || 'Private Limited');
-        setBizAddress(userProfile.settings?.business_address || '');
-        setBizPincode(userProfile.settings?.business_pincode || '');
+  // Initialize from auth context immediately
+  useEffect(() => {
+    if (authProfile) {
+      setProfile(authProfile);
+      setFullName(prev => prev || authProfile.name || auth.currentUser?.displayName || '');
+      setPhone(prev => prev || authProfile.settings?.phone || auth.currentUser?.phoneNumber || '');
+      if (authProfile.settings) {
+        setPreferences(prev => ({ ...prev, ...authProfile.settings }));
       }
-
-      if (userProfile.settings) {
-        setPreferences(prev => ({
-          ...prev,
-          ...userProfile.settings
-        }));
-      }
-
-      const role = (userProfile.role || '').toLowerCase();
-      if (role === 'admin') {
-        const [uList, st] = await Promise.all([
-          api.getAdminUsers(),
-          api.getAdminStats(),
-        ]);
-        setAdminUsers(uList);
-        setAdminStats(st);
-      }
-
-      if (['analyst', 'admin'].includes(role)) {
-        const pending = await api.getAssessments({ review_status: 'pending', all_users: true });
-        setPendingAssessments(pending);
-        await loadQueue(1, queueSearch, queueRiskLevel, queueReviewStatus);
-      }
-    } catch (err: any) {
-      console.error('Failed to load settings:', err);
-      setErrorMsg(err.message || 'Failed to load user settings');
-    } finally {
-      setLoading(false);
+      setProfileLoading(false);
+    } else if (auth.currentUser) {
+      setFullName(prev => prev || auth.currentUser?.displayName || '');
+      setPhone(prev => prev || auth.currentUser?.phoneNumber || '');
     }
+  }, [authProfile]);
+
+  const loadAllData = async () => {
+    setErrorMsg(null);
+    setLoading(true);
+
+    // 1. Critical User Profile & Identity (non-blocking)
+    api.getUserProfile()
+      .then((userProfile) => {
+        setProfile(userProfile);
+        setFullName(prev => prev || userProfile.name || auth.currentUser?.displayName || '');
+        setPhone(prev => prev || userProfile.settings?.phone || auth.currentUser?.phoneNumber || '');
+        if (userProfile.settings) {
+          setPreferences(prev => ({ ...prev, ...userProfile.settings }));
+        }
+        setProfileLoading(false);
+      })
+      .catch((err) => {
+        console.warn('Profile load error:', err);
+        setProfileLoading(false);
+      });
+
+    // 2. Business Profile (non-blocking)
+    api.getBusinesses()
+      .then((bizList) => {
+        setBusinesses(bizList);
+        if (bizList.length > 0) {
+          const b = bizList[0];
+          setPrimaryBiz(b);
+          setBizName(b.name || '');
+          setBizIndustry(b.industry || '');
+          setBizAge(b.age ?? 3);
+          setBizEmployees(b.employees ?? 10);
+          const locParts = (b.location || '').split(',');
+          setBizCity(locParts[0]?.trim() || '');
+          setBizState(locParts[1]?.trim() || '');
+        }
+        setBizLoading(false);
+      })
+      .catch(() => setBizLoading(false));
+
+    // 3. Secondary data: Alert Rules (asynchronously)
+    setRulesLoading(true);
+    api.getAlertRules()
+      .then((rules) => {
+        setAlertRules(rules);
+        setRulesLoading(false);
+      })
+      .catch(() => setRulesLoading(false));
+
+    // 4. Secondary data: Audit Logs (asynchronously)
+    setAuditLoading(true);
+    api.getAuditLogs()
+      .then((logs) => {
+        setAuditLogs(logs);
+        setAuditLoading(false);
+      })
+      .catch(() => setAuditLoading(false));
+
+    // 5. Secondary data: Admin/Analyst data if role permits
+    const effectiveRole = (authProfile?.role || profile?.role || '').toLowerCase();
+    if (effectiveRole === 'admin') {
+      setAdminUsersLoading(true);
+      Promise.all([api.getAdminUsers(), api.getAdminStats()])
+        .then(([uList, st]) => {
+          setAdminUsers(uList);
+          setAdminStats(st);
+          setAdminUsersLoading(false);
+        })
+        .catch(() => setAdminUsersLoading(false));
+    }
+
+    if (['analyst', 'admin'].includes(effectiveRole)) {
+      api.getAssessments({ review_status: 'pending', all_users: true })
+        .then(setPendingAssessments)
+        .catch(() => {});
+      loadQueue(1, queueSearch, queueRiskLevel, queueReviewStatus).catch(() => {});
+    }
+
+    setLoading(false);
   };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -456,7 +521,7 @@ export default function Settings() {
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-700/40 text-slate-300 border border-slate-700">
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-700/40 text-slate-300 border border-[#383154]">
         <Clock size={12} /> Pending Review
       </span>
     );
@@ -464,12 +529,12 @@ export default function Settings() {
 
   return (
     <div className="app-layout">
-      <Sidebar active="Settings" />
+      <Sidebar active={activeTab === "alerts" ? "Notifications" : "Settings"} />
 
       <main className="main-content">
         <div className="space-y-8 animate-fade-in text-slate-100">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800/80 pb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#383154]/80 pb-6">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent font-['Space_Grotesk']">
                 System & Security Settings
@@ -486,7 +551,7 @@ export default function Settings() {
               }}
               className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs transition-colors"
             >
-              <RefreshCw size={12} className={loading || queueLoading ? 'animate-spin text-cyan-400' : ''} /> Refresh Data
+              <RefreshCw size={12} className={loading || queueLoading ? 'animate-spin text-[#A78BFA]' : ''} /> Refresh Data
             </button>
           </div>
 
@@ -505,13 +570,13 @@ export default function Settings() {
           )}
 
           {/* Tabs */}
-          <div className="flex border-b border-slate-800 space-x-1 sm:space-x-4 overflow-x-auto">
+          <div className="flex border-b border-[#383154] space-x-1 sm:space-x-4 overflow-x-auto">
             <button
               onClick={() => setActiveTab('profile')}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${
                 activeTab === 'profile'
-                  ? 'border-cyan-400 text-cyan-400 bg-cyan-950/20'
-                  : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                  ? 'border-[#8B5CF6] text-[#A78BFA] bg-[#8B5CF6]/10'
+                  : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-[#383154]'
               }`}
             >
               <User size={16} /> User Profile & Role
@@ -525,8 +590,8 @@ export default function Settings() {
                 }}
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${
                   activeTab === 'analyst_queue'
-                    ? 'border-cyan-400 text-cyan-400 bg-cyan-950/20'
-                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                    ? 'border-[#8B5CF6] text-[#A78BFA] bg-[#8B5CF6]/10'
+                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-[#383154]'
                 }`}
               >
                 <Shield size={16} /> Analyst Review Queue {pendingAssessments.length > 0 && `(${pendingAssessments.length})`}
@@ -538,8 +603,8 @@ export default function Settings() {
                 onClick={() => setActiveTab('admin_users')}
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${
                   activeTab === 'admin_users'
-                    ? 'border-cyan-400 text-cyan-400 bg-cyan-950/20'
-                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                    ? 'border-[#8B5CF6] text-[#A78BFA] bg-[#8B5CF6]/10'
+                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-[#383154]'
                 }`}
               >
                 <Users size={16} /> User Management & Platform Health ({adminUsers.length})
@@ -550,8 +615,8 @@ export default function Settings() {
               onClick={() => setActiveTab('alerts')}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${
                 activeTab === 'alerts'
-                  ? 'border-cyan-400 text-cyan-400 bg-cyan-950/20'
-                  : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                  ? 'border-[#8B5CF6] text-[#A78BFA] bg-[#8B5CF6]/10'
+                  : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-[#383154]'
               }`}
             >
               <Bell size={16} /> Alert Rules ({alertRules.length})
@@ -561,8 +626,8 @@ export default function Settings() {
               onClick={() => setActiveTab('preferences')}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${
                 activeTab === 'preferences'
-                  ? 'border-cyan-400 text-cyan-400 bg-cyan-950/20'
-                  : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                  ? 'border-[#8B5CF6] text-[#A78BFA] bg-[#8B5CF6]/10'
+                  : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-[#383154]'
               }`}
             >
               <Sliders size={16} /> Preferences
@@ -575,31 +640,30 @@ export default function Settings() {
               }}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${
                 activeTab === 'audit'
-                  ? 'border-cyan-400 text-cyan-400 bg-cyan-950/20'
-                  : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                  ? 'border-[#8B5CF6] text-[#A78BFA] bg-[#8B5CF6]/10'
+                  : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-[#383154]'
               }`}
             >
               <Activity size={16} /> Audit Trail ({isAdmin && adminAuditTotal > 0 ? adminAuditTotal : auditLogs.length})
             </button>
           </div>
 
-          {/* Tab Content */}
-          {loading ? (
-            <div className="p-12 text-center text-slate-400">
-              <RefreshCw size={24} className="animate-spin mx-auto mb-2 text-cyan-400" />
-              Loading settings and security data...
-            </div>
-          ) : (
-            <>
+          {/* Tab Content (Rendered progressively without blocking whole page) */}
               {/* 1. User Profile & Role (Section 17) */}
               {activeTab === 'profile' && (
-                <div className="space-y-6 max-w-4xl">
+                profileLoading && !profile ? (
+                  <div className="space-y-6 max-w-4xl">
+                    <CardSkeleton />
+                    <CardSkeleton />
+                  </div>
+                ) : (
+                  <div className="space-y-6 max-w-4xl">
                   {/* Personal Information */}
-                  <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-xl">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                  <div className="bg-[#1C1933] border border-[#383154] rounded-2xl p-6 sm:p-8 space-y-6 shadow-xl">
+                    <div className="flex items-center justify-between border-b border-[#383154] pb-4">
                       <div>
                         <h3 className="text-lg font-bold text-white flex items-center gap-2 font-['Space_Grotesk']">
-                          <User size={18} className="text-cyan-400" />
+                          <User size={18} className="text-[#A78BFA]" />
                           Personal Information
                         </h3>
                         <p className="text-xs text-slate-400 mt-0.5">
@@ -609,13 +673,13 @@ export default function Settings() {
                     </div>
 
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-cyan-500/20 shrink-0 border border-cyan-400/20">
+                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#8B5CF6] to-[#7C3AED] flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-[#8B5CF6]/20 shrink-0 border border-[#8B5CF6]/20">
                         {fullName.charAt(0) || profile?.name?.charAt(0) || profile?.email?.charAt(0).toUpperCase() || 'U'}
                       </div>
                       <div>
                         <h4 className="text-base font-bold text-white">{fullName || profile?.name || 'MSME Business Owner'}</h4>
                         <p className="text-xs text-slate-400">{profile?.email}</p>
-                        <span className="text-[10px] font-semibold text-cyan-400 uppercase tracking-wider block mt-1">
+                        <span className="text-[10px] font-semibold text-[#A78BFA] uppercase tracking-wider block mt-1">
                           Role: {profile?.role === 'admin' ? 'Super Admin' : profile?.role === 'analyst' ? 'Credit Risk Analyst' : 'MSME User'}
                         </span>
                       </div>
@@ -630,7 +694,7 @@ export default function Settings() {
                             value={fullName}
                             onChange={(e) => setFullName(e.target.value)}
                             placeholder="Your full name"
-                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-400 text-xs"
+                            className="w-full px-3.5 py-2.5 bg-[#151229] border border-[#383154] rounded-xl text-white focus:outline-none focus:border-[#8B5CF6] text-xs"
                           />
                         </div>
 
@@ -640,7 +704,7 @@ export default function Settings() {
                             type="email"
                             value={profile?.email || ''}
                             disabled
-                            className="w-full px-3.5 py-2.5 bg-slate-950/60 border border-slate-800/80 rounded-xl text-slate-400 cursor-not-allowed text-xs"
+                            className="w-full px-3.5 py-2.5 bg-[#151229]/60 border border-[#383154]/80 rounded-xl text-slate-400 cursor-not-allowed text-xs"
                           />
                         </div>
 
@@ -651,15 +715,15 @@ export default function Settings() {
                             value={phone}
                             onChange={(e) => setPhone(e.target.value)}
                             placeholder="+91 98765 43210"
-                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-400 text-xs"
+                            className="w-full px-3.5 py-2.5 bg-[#151229] border border-[#383154] rounded-xl text-white focus:outline-none focus:border-[#8B5CF6] text-xs"
                           />
                         </div>
 
                         <div>
                           <label className="block text-slate-400 mb-1 font-medium">Profile Photo</label>
-                          <div className="px-3.5 py-2.5 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-400 text-xs flex items-center justify-between">
+                          <div className="px-3.5 py-2.5 bg-[#151229]/60 border border-[#383154] rounded-xl text-slate-400 text-xs flex items-center justify-between">
                             <span>Default Avatar Initials</span>
-                            <span className="text-cyan-400 text-[11px] font-semibold">Active</span>
+                            <span className="text-[#A78BFA] text-[11px] font-semibold">Active</span>
                           </div>
                         </div>
                       </div>
@@ -668,7 +732,7 @@ export default function Settings() {
                         <button
                           type="submit"
                           disabled={savingProfile}
-                          className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-cyan-600 hover:bg-cyan-500 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                          className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[#7C3AED] hover:bg-[#6D28D9] transition-colors disabled:opacity-50 flex items-center gap-1.5"
                         >
                           <Save size={14} />
                           <span>{savingProfile ? 'Saving...' : 'Save Personal Information'}</span>
@@ -678,10 +742,10 @@ export default function Settings() {
                   </div>
 
                   {/* Business Information */}
-                  <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-xl">
-                    <div className="border-b border-slate-800 pb-4">
+                  <div className="bg-[#1C1933] border border-[#383154] rounded-2xl p-6 sm:p-8 space-y-6 shadow-xl">
+                    <div className="border-b border-[#383154] pb-4">
                       <h3 className="text-lg font-bold text-white flex items-center gap-2 font-['Space_Grotesk']">
-                        <Building2 size={18} className="text-cyan-400" />
+                        <Building2 size={18} className="text-[#A78BFA]" />
                         Business Information
                       </h3>
                       <p className="text-xs text-slate-400 mt-0.5">
@@ -699,7 +763,7 @@ export default function Settings() {
                             onChange={(e) => setBizName(e.target.value)}
                             placeholder="e.g. Acme Manufacturing Ltd."
                             required
-                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-400 text-xs"
+                            className="w-full px-3.5 py-2.5 bg-[#151229] border border-[#383154] rounded-xl text-white focus:outline-none focus:border-[#8B5CF6] text-xs"
                           />
                         </div>
 
@@ -711,7 +775,7 @@ export default function Settings() {
                             onChange={(e) => setBizIndustry(e.target.value)}
                             placeholder="e.g. Manufacturing, Retail, IT"
                             required
-                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-400 text-xs"
+                            className="w-full px-3.5 py-2.5 bg-[#151229] border border-[#383154] rounded-xl text-white focus:outline-none focus:border-[#8B5CF6] text-xs"
                           />
                         </div>
 
@@ -720,7 +784,7 @@ export default function Settings() {
                           <select
                             value={bizType}
                             onChange={(e) => setBizType(e.target.value)}
-                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-400 text-xs"
+                            className="w-full px-3.5 py-2.5 bg-[#151229] border border-[#383154] rounded-xl text-white focus:outline-none focus:border-[#8B5CF6] text-xs"
                           >
                             <option value="Private Limited">Private Limited (Pvt Ltd)</option>
                             <option value="Sole Proprietorship">Sole Proprietorship</option>
@@ -737,7 +801,7 @@ export default function Settings() {
                             value={bizAddress}
                             onChange={(e) => setBizAddress(e.target.value)}
                             placeholder="Industrial Area, Phase 2, Plot 14"
-                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-400 text-xs"
+                            className="w-full px-3.5 py-2.5 bg-[#151229] border border-[#383154] rounded-xl text-white focus:outline-none focus:border-[#8B5CF6] text-xs"
                           />
                         </div>
 
@@ -748,7 +812,7 @@ export default function Settings() {
                             value={bizCity}
                             onChange={(e) => setBizCity(e.target.value)}
                             placeholder="e.g. Coimbatore"
-                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-400 text-xs"
+                            className="w-full px-3.5 py-2.5 bg-[#151229] border border-[#383154] rounded-xl text-white focus:outline-none focus:border-[#8B5CF6] text-xs"
                           />
                         </div>
 
@@ -759,7 +823,7 @@ export default function Settings() {
                             value={bizState}
                             onChange={(e) => setBizState(e.target.value)}
                             placeholder="e.g. Tamil Nadu"
-                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-400 text-xs"
+                            className="w-full px-3.5 py-2.5 bg-[#151229] border border-[#383154] rounded-xl text-white focus:outline-none focus:border-[#8B5CF6] text-xs"
                           />
                         </div>
 
@@ -770,7 +834,7 @@ export default function Settings() {
                             value={bizPincode}
                             onChange={(e) => setBizPincode(e.target.value)}
                             placeholder="641001"
-                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-400 text-xs"
+                            className="w-full px-3.5 py-2.5 bg-[#151229] border border-[#383154] rounded-xl text-white focus:outline-none focus:border-[#8B5CF6] text-xs"
                           />
                         </div>
 
@@ -782,7 +846,7 @@ export default function Settings() {
                             max="100"
                             value={bizAge}
                             onChange={(e) => setBizAge(Number(e.target.value))}
-                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-400 text-xs"
+                            className="w-full px-3.5 py-2.5 bg-[#151229] border border-[#383154] rounded-xl text-white focus:outline-none focus:border-[#8B5CF6] text-xs"
                           />
                         </div>
 
@@ -794,7 +858,7 @@ export default function Settings() {
                             max="10000"
                             value={bizEmployees}
                             onChange={(e) => setBizEmployees(Number(e.target.value))}
-                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-400 text-xs"
+                            className="w-full px-3.5 py-2.5 bg-[#151229] border border-[#383154] rounded-xl text-white focus:outline-none focus:border-[#8B5CF6] text-xs"
                           />
                         </div>
                       </div>
@@ -803,7 +867,7 @@ export default function Settings() {
                         <button
                           type="submit"
                           disabled={savingBiz}
-                          className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-cyan-600 hover:bg-cyan-500 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                          className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[#7C3AED] hover:bg-[#6D28D9] transition-colors disabled:opacity-50 flex items-center gap-1.5"
                         >
                           <Save size={14} />
                           <span>{savingBiz ? 'Saving...' : 'Save Business Information'}</span>
@@ -815,21 +879,21 @@ export default function Settings() {
                   {/* Account & Security */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Account Status */}
-                    <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                    <div className="bg-[#1C1933] border border-[#383154] rounded-2xl p-6 space-y-4 shadow-xl">
                       <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                        <Shield size={16} className="text-cyan-400" />
+                        <Shield size={16} className="text-[#A78BFA]" />
                         Account & Authentication
                       </h4>
 
                       <div className="space-y-3 text-xs">
-                        <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between">
+                        <div className="p-3 bg-[#151229]/60 border border-[#383154] rounded-xl flex items-center justify-between">
                           <span className="text-slate-400">Platform Role:</span>
-                          <span className="font-bold text-cyan-300 capitalize">
+                          <span className="font-bold text-[#C4B5FD] capitalize">
                             {profile?.role === 'admin' ? 'Super Admin' : profile?.role === 'analyst' ? 'Credit Risk Analyst' : 'MSME User'}
                           </span>
                         </div>
 
-                        <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between">
+                        <div className="p-3 bg-[#151229]/60 border border-[#383154] rounded-xl flex items-center justify-between">
                           <span className="text-slate-400">Account Status:</span>
                           <span className="font-bold text-emerald-400 flex items-center gap-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
@@ -837,12 +901,12 @@ export default function Settings() {
                           </span>
                         </div>
 
-                        <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between">
+                        <div className="p-3 bg-[#151229]/60 border border-[#383154] rounded-xl flex items-center justify-between">
                           <span className="text-slate-400">Auth Method:</span>
                           <span className="font-medium text-slate-200">Firebase Identity Token</span>
                         </div>
 
-                        <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between">
+                        <div className="p-3 bg-[#151229]/60 border border-[#383154] rounded-xl flex items-center justify-between">
                           <span className="text-slate-400">User UID:</span>
                           <span className="font-mono text-[11px] text-slate-300 truncate max-w-[140px]">
                             {profile?.uid || 'usr_msme'}
@@ -852,17 +916,17 @@ export default function Settings() {
                     </div>
 
                     {/* Security & Password */}
-                    <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl flex flex-col justify-between">
+                    <div className="bg-[#1C1933] border border-[#383154] rounded-2xl p-6 space-y-4 shadow-xl flex flex-col justify-between">
                       <div>
                         <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                          <Lock size={16} className="text-cyan-400" />
+                          <Lock size={16} className="text-[#A78BFA]" />
                           Security Controls
                         </h4>
                         <p className="text-xs text-slate-400 mt-1 leading-relaxed">
                           Manage login credentials and secure access to your MSME credit file.
                         </p>
 
-                        <div className="mt-4 p-3.5 bg-slate-950/60 border border-slate-800 rounded-xl space-y-2 text-xs">
+                        <div className="mt-4 p-3.5 bg-[#151229]/60 border border-[#383154] rounded-xl space-y-2 text-xs">
                           <span className="font-medium text-white block">Reset Password</span>
                           <p className="text-slate-400 text-[11px]">
                             We will send a password reset link to <b className="text-slate-200">{profile?.email}</b>.
@@ -871,14 +935,14 @@ export default function Settings() {
                             type="button"
                             onClick={handleSendPasswordReset}
                             disabled={resetLoading || resetSent}
-                            className="mt-1 px-3 py-1.5 bg-cyan-950/40 hover:bg-cyan-900/50 text-cyan-300 border border-cyan-500/30 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
+                            className="mt-1 px-3 py-1.5 bg-[#8B5CF6]/10 hover:bg-[#252141] text-[#C4B5FD] border border-[#8B5CF6]/30 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
                           >
                             {resetLoading ? 'Sending...' : resetSent ? 'Email Sent ✓' : 'Send Password Reset Email'}
                           </button>
                         </div>
                       </div>
 
-                      <div className="pt-3 border-t border-slate-800 flex justify-end">
+                      <div className="pt-3 border-t border-[#383154] flex justify-end">
                         <button
                           type="button"
                           onClick={() => {
@@ -893,7 +957,7 @@ export default function Settings() {
                     </div>
                   </div>
                 </div>
-              )}
+              ))}
 
               {/* 2. Analyst Review Queue (Section 14) */}
               {activeTab === 'analyst_queue' && isAnalystOrAdmin && (
@@ -908,7 +972,7 @@ export default function Settings() {
                   </div>
 
                   {/* Filters Bar */}
-                  <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-2xl flex flex-col md:flex-row items-center gap-3">
+                  <div className="p-4 bg-[#1C1933] border border-[#383154] rounded-2xl flex flex-col md:flex-row items-center gap-3">
                     {/* Search */}
                     <div className="relative flex-1 w-full">
                       <Search size={14} className="absolute left-3 top-3 text-slate-400" />
@@ -920,7 +984,7 @@ export default function Settings() {
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') loadQueue(1, queueSearch, queueRiskLevel, queueReviewStatus);
                         }}
-                        className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+                        className="w-full pl-9 pr-4 py-2 bg-[#151229] border border-[#383154] rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#8B5CF6]"
                       />
                     </div>
 
@@ -933,7 +997,7 @@ export default function Settings() {
                           setQueueRiskLevel(e.target.value);
                           loadQueue(1, queueSearch, e.target.value, queueReviewStatus);
                         }}
-                        className="px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-400"
+                        className="px-3 py-2 bg-[#151229] border border-[#383154] rounded-xl text-xs text-white focus:outline-none focus:border-[#8B5CF6]"
                       >
                         <option value="ALL">All Risk Levels</option>
                         <option value="LOW">Low Risk</option>
@@ -951,7 +1015,7 @@ export default function Settings() {
                           setQueueReviewStatus(e.target.value);
                           loadQueue(1, queueSearch, queueRiskLevel, e.target.value);
                         }}
-                        className="px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-400"
+                        className="px-3 py-2 bg-[#151229] border border-[#383154] rounded-xl text-xs text-white focus:outline-none focus:border-[#8B5CF6]"
                       >
                         <option value="ALL">All Decisions</option>
                         <option value="pending">Pending Review</option>
@@ -963,7 +1027,7 @@ export default function Settings() {
 
                     <button
                       onClick={() => loadQueue(1, queueSearch, queueRiskLevel, queueReviewStatus)}
-                      className="px-4 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded-xl text-xs font-semibold whitespace-nowrap"
+                      className="px-4 py-2 bg-[#8B5CF6]/10 hover:bg-[#8B5CF6]/20 text-[#C4B5FD] border border-[#8B5CF6]/30 rounded-xl text-xs font-semibold whitespace-nowrap"
                     >
                       Apply Filters
                     </button>
@@ -971,21 +1035,20 @@ export default function Settings() {
 
                   {/* Queue Table */}
                   {queueLoading ? (
-                    <div className="p-12 text-center text-slate-500 bg-slate-900/40 border border-slate-800 rounded-2xl">
-                      <RefreshCw size={24} className="animate-spin mx-auto mb-2 text-cyan-400" />
-                      Loading portfolio assessments...
+                    <div className="bg-[#1C1933] border border-[#383154] rounded-2xl p-4">
+                      <TableSkeleton rows={5} />
                     </div>
                   ) : queueAssessments.length === 0 ? (
-                    <div className="p-12 text-center text-slate-500 bg-slate-900/40 border border-slate-800 rounded-2xl">
+                    <div className="p-12 text-center text-slate-500 bg-[#1C1933] border border-[#383154] rounded-2xl">
                       <CheckCircle2 size={36} className="mx-auto mb-3 opacity-40 text-emerald-400" />
                       <p className="font-medium text-slate-300">No assessments match criteria</p>
                       <p className="text-xs text-slate-500 mt-1">Adjust search parameters or clear filters.</p>
                     </div>
                   ) : (
-                    <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                    <div className="bg-[#1C1933] border border-[#383154] rounded-2xl overflow-hidden shadow-xl">
                       <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm text-slate-300">
-                          <thead className="text-xs uppercase bg-slate-950/60 text-slate-400 border-b border-slate-800">
+                          <thead className="text-xs uppercase bg-[#151229]/60 text-slate-400 border-b border-[#383154]">
                             <tr>
                               <th className="px-5 py-3 font-semibold">Business Name</th>
                               <th className="px-5 py-3 font-semibold">Assessment ID</th>
@@ -997,14 +1060,14 @@ export default function Settings() {
                               <th className="px-5 py-3 font-semibold text-right">Review Action</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-800/60 text-xs">
+                          <tbody className="divide-y divide-[#383154]/60 text-xs">
                             {queueAssessments.map((a) => (
                               <tr key={a.id} className="hover:bg-slate-800/40 transition-colors">
                                 <td className="px-5 py-3.5 font-bold text-white">
                                   {a.business_name}
                                   <div className="text-[10px] text-slate-400 capitalize">{a.industry}</div>
                                 </td>
-                                <td className="px-5 py-3.5 font-mono text-cyan-400 font-semibold">
+                                <td className="px-5 py-3.5 font-mono text-[#A78BFA] font-semibold">
                                   MSME-{a.id}
                                 </td>
                                 <td className="px-5 py-3.5">
@@ -1032,14 +1095,14 @@ export default function Settings() {
                                   <div className="flex items-center justify-end gap-2">
                                     <button
                                       onClick={() => handleOpenReviewModal(a)}
-                                      className="px-2.5 py-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 rounded-lg text-xs font-semibold transition-colors"
+                                      className="px-2.5 py-1 bg-[#8B5CF6]/20 hover:bg-[#8B5CF6]/30 text-[#C4B5FD] border border-[#8B5CF6]/30 rounded-lg text-xs font-semibold transition-colors"
                                       title="Update Review Decision"
                                     >
                                       Review Decision
                                     </button>
                                     <button
                                       onClick={() => navigate(`/reports?id=${a.id}`)}
-                                      className="p-1 hover:bg-slate-700 text-slate-400 hover:text-cyan-300 rounded-lg transition-colors"
+                                      className="p-1 hover:bg-slate-700 text-slate-400 hover:text-[#C4B5FD] rounded-lg transition-colors"
                                       title="View Full Report"
                                     >
                                       <Eye size={14} />
@@ -1053,7 +1116,7 @@ export default function Settings() {
                       </div>
 
                       {/* Server-side Pagination Controls */}
-                      <div className="p-4 border-t border-slate-800/80 bg-slate-950/40 flex items-center justify-between text-xs text-slate-400">
+                      <div className="p-4 border-t border-[#383154]/80 bg-[#151229]/40 flex items-center justify-between text-xs text-slate-400">
                         <div>
                           Showing page <span className="text-white font-semibold">{queuePage}</span> of{' '}
                           <span className="text-white font-semibold">{queueTotalPages}</span> ({queueTotal} total assessments)
@@ -1095,35 +1158,35 @@ export default function Settings() {
                   {/* Real Database Platform Statistics Cards */}
                   {adminStats && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                      <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-2xl">
+                      <div className="p-4 bg-[#1C1933] border border-[#383154] rounded-2xl">
                         <span className="text-xs text-slate-400">Total Users</span>
                         <div className="text-2xl font-bold text-white font-['Space_Grotesk'] mt-1">{adminStats.total_users}</div>
                       </div>
-                      <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-2xl">
+                      <div className="p-4 bg-[#1C1933] border border-[#383154] rounded-2xl">
                         <span className="text-xs text-slate-400">Registered MSMEs</span>
                         <div className="text-2xl font-bold text-white font-['Space_Grotesk'] mt-1">{adminStats.total_businesses}</div>
                       </div>
-                      <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-2xl">
+                      <div className="p-4 bg-[#1C1933] border border-[#383154] rounded-2xl">
                         <span className="text-xs text-slate-400">Total Assessments</span>
-                        <div className="text-2xl font-bold text-cyan-400 font-['Space_Grotesk'] mt-1">{adminStats.total_assessments}</div>
+                        <div className="text-2xl font-bold text-[#A78BFA] font-['Space_Grotesk'] mt-1">{adminStats.total_assessments}</div>
                       </div>
-                      <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-2xl">
+                      <div className="p-4 bg-[#1C1933] border border-[#383154] rounded-2xl">
                         <span className="text-xs text-slate-400">Pending Reviews</span>
                         <div className="text-2xl font-bold text-amber-400 font-['Space_Grotesk'] mt-1">{adminStats.pending_reviews ?? 0}</div>
                       </div>
-                      <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-2xl">
+                      <div className="p-4 bg-[#1C1933] border border-[#383154] rounded-2xl">
                         <span className="text-xs text-slate-400">Approved Assessments</span>
                         <div className="text-2xl font-bold text-emerald-400 font-['Space_Grotesk'] mt-1">{adminStats.approved_assessments ?? 0}</div>
                       </div>
-                      <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-2xl">
+                      <div className="p-4 bg-[#1C1933] border border-[#383154] rounded-2xl">
                         <span className="text-xs text-slate-400">Rejected Assessments</span>
                         <div className="text-2xl font-bold text-rose-400 font-['Space_Grotesk'] mt-1">{adminStats.rejected_assessments ?? 0}</div>
                       </div>
-                      <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-2xl">
+                      <div className="p-4 bg-[#1C1933] border border-[#383154] rounded-2xl">
                         <span className="text-xs text-slate-400">Needs Info / Conditional</span>
                         <div className="text-2xl font-bold text-indigo-400 font-['Space_Grotesk'] mt-1">{adminStats.needs_info_assessments ?? 0}</div>
                       </div>
-                      <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-2xl">
+                      <div className="p-4 bg-[#1C1933] border border-[#383154] rounded-2xl">
                         <span className="text-xs text-slate-400">High Risk Borrowers</span>
                         <div className="text-2xl font-bold text-rose-500 font-['Space_Grotesk'] mt-1">{adminStats.high_risk_assessments ?? 0}</div>
                       </div>
@@ -1131,9 +1194,9 @@ export default function Settings() {
                   )}
 
                   {/* AI Model Governance & MLOps Monitoring Module */}
-                  <div className="p-5 rounded-2xl bg-gradient-to-r from-[#09152b] to-[#0d1d3a] border border-[#1d3862] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+                  <div className="p-5 rounded-2xl bg-gradient-to-r from-[#0C0A1D] to-[#1C1933] border border-[#383154] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-cyan-950/70 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 mt-0.5">
+                      <div className="w-10 h-10 rounded-xl bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 flex items-center justify-center text-[#A78BFA] shrink-0 mt-0.5">
                         <Activity className="w-5 h-5" />
                       </div>
                       <div>
@@ -1148,13 +1211,13 @@ export default function Settings() {
                     <div className="flex flex-wrap items-center gap-2.5 shrink-0">
                       <button
                         onClick={() => navigate('/admin/model-monitoring')}
-                        className="px-3.5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-bold transition-all shadow-md shadow-cyan-500/20"
+                        className="px-3.5 py-2 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-black text-xs font-bold transition-all shadow-md shadow-[#8B5CF6]/20"
                       >
                         Model Monitoring
                       </button>
                       <button
                         onClick={() => navigate('/admin/model-card')}
-                        className="px-3.5 py-2 rounded-xl bg-[#0c1b33] hover:bg-[#13284b] text-slate-200 border border-[#1c355c] text-xs font-semibold transition-all"
+                        className="px-3.5 py-2 rounded-xl bg-[#1C1933] hover:bg-[#252141] text-slate-200 border border-[#383154] text-xs font-semibold transition-all"
                       >
                         Institutional Model Card
                       </button>
@@ -1162,14 +1225,19 @@ export default function Settings() {
                   </div>
 
                   {/* Users Table */}
-                  <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-                    <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+                  <div className="bg-[#1C1933] border border-[#383154] rounded-2xl overflow-hidden shadow-xl">
+                    <div className="p-4 border-b border-[#383154] flex items-center justify-between">
                       <span className="font-semibold text-white text-sm">Platform Users & RBAC Permissions</span>
                       <span className="text-xs text-slate-400">{adminUsers.length} registered accounts</span>
                     </div>
-                    <div className="overflow-x-auto">
+                    {adminUsersLoading ? (
+                      <div className="p-4">
+                        <TableSkeleton rows={5} />
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
                       <table className="w-full text-left text-sm text-slate-300">
-                        <thead className="text-xs uppercase bg-slate-950/60 text-slate-400 border-b border-slate-800">
+                        <thead className="text-xs uppercase bg-[#151229]/60 text-slate-400 border-b border-[#383154]">
                           <tr>
                             <th className="px-5 py-3 font-semibold">User</th>
                             <th className="px-5 py-3 font-semibold">Email</th>
@@ -1180,7 +1248,7 @@ export default function Settings() {
                             <th className="px-5 py-3 font-semibold text-right">Role Update Control</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-800/60 text-xs">
+                        <tbody className="divide-y divide-[#383154]/60 text-xs">
                           {adminUsers.map((u) => (
                             <tr key={u.uid} className="hover:bg-slate-800/40 transition-colors">
                               <td className="px-5 py-3.5 font-bold text-white">{u.name || 'MSME User'}</td>
@@ -1191,8 +1259,8 @@ export default function Settings() {
                               <td className="px-5 py-3.5">
                                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                                   u.role === 'admin' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' :
-                                  u.role === 'analyst' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
-                                  'bg-slate-800 text-slate-300 border border-slate-700'
+                                  u.role === 'analyst' ? 'bg-[#8B5CF6]/20 text-[#C4B5FD] border border-[#8B5CF6]/30' :
+                                  'bg-slate-800 text-slate-300 border border-[#383154]'
                                 }`}>
                                   {u.role}
                                 </span>
@@ -1202,7 +1270,7 @@ export default function Settings() {
                                   value={u.role}
                                   onChange={(e) => handleRoleChange(u, e.target.value)}
                                   disabled={saving}
-                                  className="px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs focus:outline-none focus:border-cyan-400 cursor-pointer disabled:opacity-50"
+                                  className="px-2.5 py-1.5 bg-[#151229] border border-[#383154] rounded-lg text-white text-xs focus:outline-none focus:border-[#8B5CF6] cursor-pointer disabled:opacity-50"
                                 >
                                   <option value="user">User</option>
                                   <option value="analyst">Analyst</option>
@@ -1214,18 +1282,19 @@ export default function Settings() {
                         </tbody>
                       </table>
                     </div>
+                  )}
                   </div>
 
                   {/* Recent Activity stream from adminStats */}
                   {adminStats?.recent_activity && adminStats.recent_activity.length > 0 && (
-                    <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+                    <div className="bg-[#1C1933] border border-[#383154] rounded-2xl p-5 shadow-xl space-y-3">
                       <h3 className="text-sm font-bold text-white">Recent Assessment Activity</h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                         {adminStats.recent_activity.map((act) => (
-                          <div key={act.id} className="p-3 bg-slate-950/60 border border-slate-800/80 rounded-xl text-xs space-y-1">
+                          <div key={act.id} className="p-3 bg-[#151229]/60 border border-[#383154]/80 rounded-xl text-xs space-y-1">
                             <div className="flex items-center justify-between">
                               <span className="font-bold text-white">{act.business_name}</span>
-                              <span className="text-[10px] font-mono text-cyan-400">MSME-{act.id}</span>
+                              <span className="text-[10px] font-mono text-[#A78BFA]">MSME-{act.id}</span>
                             </div>
                             <div className="flex items-center justify-between text-slate-400 text-[11px]">
                               <span>Status: <b className="text-slate-200 capitalize">{act.review_status}</b></span>
@@ -1248,14 +1317,20 @@ export default function Settings() {
                     </p>
                     <button
                       onClick={() => setShowRuleModal(true)}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold text-xs rounded-xl shadow-lg shadow-cyan-500/20 transition-all"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] hover:from-[#7C3AED] hover:to-[#6D28D9] text-white font-semibold text-xs rounded-xl shadow-lg shadow-[#8B5CF6]/20 transition-all"
                     >
                       <Plus size={14} /> New Alert Rule
                     </button>
                   </div>
 
-                  {alertRules.length === 0 ? (
-                    <div className="p-12 text-center text-slate-500 bg-slate-900/40 border border-slate-800 rounded-2xl">
+                  {rulesLoading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <CardSkeleton />
+                      <CardSkeleton />
+                      <CardSkeleton />
+                    </div>
+                  ) : alertRules.length === 0 ? (
+                    <div className="p-12 text-center text-slate-500 bg-[#1C1933] border border-[#383154] rounded-2xl">
                       <Bell size={36} className="mx-auto mb-3 opacity-40 text-slate-400" />
                       <p className="font-medium text-slate-300">No alert rules configured</p>
                       <p className="text-xs text-slate-500 mt-1">Create rules to monitor portfolio risk levels automatically.</p>
@@ -1265,11 +1340,11 @@ export default function Settings() {
                       {alertRules.map((rule) => (
                         <div 
                           key={rule.id}
-                          className="bg-slate-900/60 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4"
+                          className="bg-[#1C1933] border border-[#383154] hover:border-[#383154] rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4"
                         >
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-[#8B5CF6]/20 text-[#C4B5FD] border border-[#8B5CF6]/30">
                                 {rule.rule_type.replace(/_/g, ' ')}
                               </span>
                               <button
@@ -1280,11 +1355,11 @@ export default function Settings() {
                               </button>
                             </div>
                             <h4 className="font-bold text-white text-base">{rule.name}</h4>
-                            <div className="p-2.5 bg-slate-950/80 rounded-xl text-xs font-mono text-slate-300 border border-slate-800">
+                            <div className="p-2.5 bg-[#151229]/80 rounded-xl text-xs font-mono text-slate-300 border border-[#383154]">
                               Threshold: {rule.threshold}%
                             </div>
                           </div>
-                          <div className="text-[11px] text-slate-500 flex items-center justify-between border-t border-slate-800 pt-3">
+                          <div className="text-[11px] text-slate-500 flex items-center justify-between border-t border-[#383154] pt-3">
                             <span>Status: {rule.is_active ? 'Active' : 'Paused'}</span>
                             <span>{new Date(rule.created_at).toLocaleDateString()}</span>
                           </div>
@@ -1297,11 +1372,11 @@ export default function Settings() {
 
               {/* 5. Preferences */}
               {activeTab === 'preferences' && (
-                <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-xl max-w-3xl">
+                <div className="bg-[#1C1933] border border-[#383154] rounded-2xl p-6 sm:p-8 space-y-6 shadow-xl max-w-3xl">
                   <h3 className="text-lg font-bold text-white">System Notification Preferences</h3>
                   
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-slate-950/60 border border-slate-800/80 rounded-xl">
+                    <div className="flex items-center justify-between p-4 bg-[#151229]/60 border border-[#383154]/80 rounded-xl">
                       <div>
                         <h4 className="font-medium text-white text-sm">Email Risk Notifications</h4>
                         <p className="text-xs text-slate-400">Receive email alerts when automated risk rules trigger.</p>
@@ -1309,14 +1384,14 @@ export default function Settings() {
                       <button
                         onClick={() => setPreferences(p => ({ ...p, email_notifications: !p.email_notifications }))}
                         className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors ${
-                          preferences.email_notifications ? 'bg-cyan-500 justify-end' : 'bg-slate-700 justify-start'
+                          preferences.email_notifications ? 'bg-[#8B5CF6] justify-end' : 'bg-slate-700 justify-start'
                         }`}
                       >
                         <div className="w-4 h-4 rounded-full bg-white shadow-md"></div>
                       </button>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 bg-slate-950/60 border border-slate-800/80 rounded-xl">
+                    <div className="flex items-center justify-between p-4 bg-[#151229]/60 border border-[#383154]/80 rounded-xl">
                       <div>
                         <h4 className="font-medium text-white text-sm">High-Risk Push Alerts</h4>
                         <p className="text-xs text-slate-400">Show immediate browser banner when High-Risk probability &gt; 70% is predicted.</p>
@@ -1324,14 +1399,14 @@ export default function Settings() {
                       <button
                         onClick={() => setPreferences(p => ({ ...p, high_risk_alerts: !p.high_risk_alerts }))}
                         className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors ${
-                          preferences.high_risk_alerts ? 'bg-cyan-500 justify-end' : 'bg-slate-700 justify-start'
+                          preferences.high_risk_alerts ? 'bg-[#8B5CF6] justify-end' : 'bg-slate-700 justify-start'
                         }`}
                       >
                         <div className="w-4 h-4 rounded-full bg-white shadow-md"></div>
                       </button>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 bg-slate-950/60 border border-slate-800/80 rounded-xl">
+                    <div className="flex items-center justify-between p-4 bg-[#151229]/60 border border-[#383154]/80 rounded-xl">
                       <div>
                         <h4 className="font-medium text-white text-sm">Weekly Portfolio Digest</h4>
                         <p className="text-xs text-slate-400">Receive a weekly summary report of all assessed MSME borrowers.</p>
@@ -1339,7 +1414,7 @@ export default function Settings() {
                       <button
                         onClick={() => setPreferences(p => ({ ...p, weekly_digest: !p.weekly_digest }))}
                         className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors ${
-                          preferences.weekly_digest ? 'bg-cyan-500 justify-end' : 'bg-slate-700 justify-start'
+                          preferences.weekly_digest ? 'bg-[#8B5CF6] justify-end' : 'bg-slate-700 justify-start'
                         }`}
                       >
                         <div className="w-4 h-4 rounded-full bg-white shadow-md"></div>
@@ -1351,7 +1426,7 @@ export default function Settings() {
                     <button
                       onClick={handleSavePreferences}
                       disabled={saving}
-                      className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-cyan-500/20 transition-all disabled:opacity-50"
+                      className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] hover:from-[#7C3AED] hover:to-[#6D28D9] text-white font-semibold text-sm rounded-xl shadow-lg shadow-[#8B5CF6]/20 transition-all disabled:opacity-50"
                     >
                       <Save size={16} className={saving ? 'animate-spin' : ''} />
                       {saving ? 'Saving...' : 'Save Preferences'}
@@ -1378,7 +1453,7 @@ export default function Settings() {
                             setAdminAuditAction(e.target.value);
                             loadAdminAuditLogs(1, e.target.value);
                           }}
-                          className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-400"
+                          className="px-3 py-1.5 bg-[#151229] border border-[#383154] rounded-xl text-xs text-white focus:outline-none focus:border-[#8B5CF6]"
                         >
                           <option value="ALL">All Actions</option>
                           <option value="ROLE_CHANGED">ROLE_CHANGED</option>
@@ -1398,8 +1473,12 @@ export default function Settings() {
                     )}
                   </div>
 
-                  <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-                    {auditLogs.length === 0 ? (
+                  <div className="bg-[#1C1933] border border-[#383154] rounded-2xl overflow-hidden shadow-xl">
+                    {auditLoading ? (
+                      <div className="p-4">
+                        <TableSkeleton rows={5} />
+                      </div>
+                    ) : auditLogs.length === 0 ? (
                       <div className="p-12 text-center text-slate-500">
                         <Activity size={36} className="mx-auto mb-3 opacity-40 text-slate-400" />
                         <p className="font-medium text-slate-300">No audit logs recorded yet</p>
@@ -1407,7 +1486,7 @@ export default function Settings() {
                     ) : (
                       <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm text-slate-300">
-                          <thead className="text-xs uppercase bg-slate-950/60 text-slate-400 border-b border-slate-800">
+                          <thead className="text-xs uppercase bg-[#151229]/60 text-slate-400 border-b border-[#383154]">
                             <tr>
                               <th className="px-5 py-3 font-semibold">Timestamp</th>
                               <th className="px-5 py-3 font-semibold">Action</th>
@@ -1416,14 +1495,14 @@ export default function Settings() {
                               <th className="px-5 py-3 font-semibold">Metadata & Details</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-800/60 font-mono text-xs">
+                          <tbody className="divide-y divide-[#383154]/60 font-mono text-xs">
                             {auditLogs.map((log) => (
                               <tr key={log.id} className="hover:bg-slate-800/40 transition-colors">
                                 <td className="px-5 py-3 text-slate-400 whitespace-nowrap">
                                   {new Date(log.created_at).toLocaleString()}
                                 </td>
-                                <td className="px-5 py-3 font-semibold text-cyan-300">
-                                  <span className="px-2 py-0.5 rounded-md bg-cyan-950/40 border border-cyan-800/40">
+                                <td className="px-5 py-3 font-semibold text-[#C4B5FD]">
+                                  <span className="px-2 py-0.5 rounded-md bg-[#8B5CF6]/10 border border-[#8B5CF6]/30">
                                     {log.action}
                                   </span>
                                 </td>
@@ -1445,7 +1524,7 @@ export default function Settings() {
 
                     {/* Admin Audit Pagination */}
                     {isAdmin && adminAuditTotalPages > 1 && (
-                      <div className="p-3 border-t border-slate-800/80 bg-slate-950/40 flex items-center justify-between text-xs text-slate-400">
+                      <div className="p-3 border-t border-[#383154]/80 bg-[#151229]/40 flex items-center justify-between text-xs text-slate-400">
                         <div>
                           Page <span className="text-white font-semibold">{adminAuditPage}</span> of{' '}
                           <span className="text-white font-semibold">{adminAuditTotalPages}</span> ({adminAuditTotal} records)
@@ -1471,14 +1550,12 @@ export default function Settings() {
                   </div>
                 </div>
               )}
-            </>
-          )}
 
           {/* Modal: Review Decision Modal (Section 14 & 15) */}
           {reviewModalOpen && selectedAssessmentForReview && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-5 shadow-2xl">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#151229]/80 backdrop-blur-sm animate-fade-in">
+              <div className="bg-[#1C1933] border border-[#383154] rounded-2xl w-full max-w-lg p-6 space-y-5 shadow-2xl">
+                <div className="flex items-center justify-between border-b border-[#383154] pb-3">
                   <div>
                     <h3 className="text-base font-bold text-white">Underwriting Review & Decision</h3>
                     <p className="text-xs text-slate-400 mt-0.5">
@@ -1504,7 +1581,7 @@ export default function Settings() {
                     <select
                       value={reviewDecision}
                       onChange={(e) => setReviewDecision(e.target.value as any)}
-                      className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400"
+                      className="w-full px-3.5 py-2.5 bg-[#151229] border border-[#383154] rounded-xl text-white text-sm focus:outline-none focus:border-[#8B5CF6]"
                     >
                       <option value="approved">Approved</option>
                       <option value="needs_info">Needs Info / Conditional</option>
@@ -1522,11 +1599,11 @@ export default function Settings() {
                       placeholder="e.g. Approved with collateral verification. Cash flow ratios conform to underwriting policy."
                       value={reviewNotes}
                       onChange={(e) => setReviewNotes(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 resize-none"
+                      className="w-full px-3.5 py-2.5 bg-[#151229] border border-[#383154] rounded-xl text-white text-sm focus:outline-none focus:border-[#8B5CF6] resize-none"
                     />
                   </div>
 
-                  <div className="p-3 bg-cyan-950/30 border border-cyan-500/20 rounded-xl text-[11px] text-cyan-300">
+                  <div className="p-3 bg-[#8B5CF6]/15 border border-[#8B5CF6]/20 rounded-xl text-[11px] text-[#C4B5FD]">
                     Updating this assessment status will record an immutable audit event and immediately send a notification to the borrower.
                   </div>
 
@@ -1544,7 +1621,7 @@ export default function Settings() {
                     <button
                       type="submit"
                       disabled={submittingReview}
-                      className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-cyan-500/20 transition-all disabled:opacity-50"
+                      className="px-4 py-2 bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] hover:from-[#7C3AED] hover:to-[#6D28D9] text-white font-bold text-xs rounded-xl shadow-lg shadow-[#8B5CF6]/20 transition-all disabled:opacity-50"
                     >
                       {submittingReview ? 'Saving Review...' : 'Submit Decision'}
                     </button>
@@ -1556,8 +1633,8 @@ export default function Settings() {
 
           {/* Modal: New Alert Rule */}
           {showRuleModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-5 shadow-2xl">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#151229]/80 backdrop-blur-sm animate-fade-in">
+              <div className="bg-[#1C1933] border border-[#383154] rounded-2xl w-full max-w-md p-6 space-y-5 shadow-2xl">
                 <h3 className="text-lg font-bold text-white">Create Automated Alert Rule</h3>
 
                 <form onSubmit={handleCreateRule} className="space-y-4">
@@ -1569,7 +1646,7 @@ export default function Settings() {
                       placeholder="e.g. Critical Default Probability"
                       value={newRule.name}
                       onChange={(e) => setNewRule({ ...newRule, name: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400"
+                      className="w-full px-3.5 py-2.5 bg-[#151229] border border-[#383154] rounded-xl text-white text-sm focus:outline-none focus:border-[#8B5CF6]"
                     />
                   </div>
 
@@ -1578,7 +1655,7 @@ export default function Settings() {
                     <select
                       value={newRule.rule_type}
                       onChange={(e) => setNewRule({ ...newRule, rule_type: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400"
+                      className="w-full px-3.5 py-2.5 bg-[#151229] border border-[#383154] rounded-xl text-white text-sm focus:outline-none focus:border-[#8B5CF6]"
                     >
                       <option value="high_risk_threshold">High Risk Probability Threshold</option>
                       <option value="debt_ratio_threshold">High Debt Ratio Threshold</option>
@@ -1596,7 +1673,7 @@ export default function Settings() {
                       required
                       value={newRule.threshold}
                       onChange={(e) => setNewRule({ ...newRule, threshold: parseFloat(e.target.value) })}
-                      className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400"
+                      className="w-full px-3.5 py-2.5 bg-[#151229] border border-[#383154] rounded-xl text-white text-sm focus:outline-none focus:border-[#8B5CF6]"
                     />
                   </div>
 
@@ -1611,7 +1688,7 @@ export default function Settings() {
                     <button
                       type="submit"
                       disabled={saving}
-                      className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl transition-colors disabled:opacity-50"
+                      className="px-4 py-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold text-xs rounded-xl transition-colors disabled:opacity-50"
                     >
                       {saving ? 'Creating...' : 'Create Rule'}
                     </button>

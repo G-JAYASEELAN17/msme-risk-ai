@@ -21,11 +21,11 @@ export default function LoginLandingPage() {
       description: "Submit your business information, financial data and documents.",
       path: "/login/user",
       icon: Building2,
-      accentColor: "from-cyan-500/20 to-blue-600/10",
-      borderColor: "border-cyan-500/30 hover:border-cyan-400/60",
-      glowColor: "group-hover:shadow-cyan-500/10",
-      iconBg: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
-      buttonVariant: "bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-950/40",
+      accentColor: "from-[#8B5CF6]/20 to-blue-600/10",
+      borderColor: "border-[#8B5CF6]/30 hover:border-[#8B5CF6]/60",
+      glowColor: "group-hover:shadow-[#8B5CF6]/30/10",
+      iconBg: "bg-[#8B5CF6]/10 text-[#A78BFA] border-[#8B5CF6]/20",
+      buttonVariant: "bg-[#7C3AED] hover:bg-[#6D28D9] text-white shadow-[#0C0A1D]/40",
       buttonText: "Log in as MSME User",
     },
     {
@@ -59,24 +59,32 @@ export default function LoginLandingPage() {
   ];
 
   return (
-    <div className="min-h-screen w-full flex flex-col justify-between bg-[#040812] text-slate-100 relative overflow-hidden font-sans">
+    <div className="min-h-screen w-full flex flex-col justify-between bg-[#151229] text-slate-100 relative overflow-hidden font-sans">
       {/* Ambient background glows */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-gradient-to-b from-blue-600/10 via-cyan-500/5 to-transparent blur-3xl pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-gradient-to-b from-blue-600/10 via-[#8B5CF6]/5 to-transparent blur-3xl pointer-events-none" />
       <div className="absolute -bottom-24 right-10 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
 
       {/* Top Navbar */}
-      <header className="relative z-10 w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between border-b border-[#112038]">
+      <header className="relative z-10 w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between border-b border-[#383154]">
         <Brand />
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3">
           <Link
-            to="/register"
+            to="/register?role=analyst"
+            state={{ role: "analyst" }}
+            className="text-xs sm:text-sm text-indigo-300 hover:text-white px-3 py-1.5 rounded-lg border border-indigo-500/30 hover:border-indigo-500/60 transition-colors hidden md:inline-block"
+          >
+            Apply as Analyst
+          </Link>
+          <Link
+            to="/register?role=user"
+            state={{ role: "user" }}
             className="text-xs sm:text-sm text-slate-300 hover:text-white px-3.5 py-1.5 rounded-lg border border-slate-700/60 hover:border-slate-600 transition-colors"
           >
             Create MSME Account
           </Link>
           <Link
             to="/"
-            className="text-xs sm:text-sm text-slate-400 hover:text-cyan-400 transition-colors hidden sm:inline-block"
+            className="text-xs sm:text-sm text-slate-400 hover:text-[#A78BFA] transition-colors hidden sm:inline-block"
           >
             Back to Home →
           </Link>
@@ -86,7 +94,7 @@ export default function LoginLandingPage() {
       {/* Main Authentication Landing Content */}
       <main className="relative z-10 max-w-6xl mx-auto px-6 py-12 sm:py-16 flex-1 flex flex-col justify-center items-center text-center">
         {/* Badge & Title */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 mb-4 animate-fade-in">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold bg-[#8B5CF6]/10 text-[#A78BFA] border border-[#8B5CF6]/20 mb-4 animate-fade-in">
           <Sparkles className="w-3.5 h-3.5" />
           <span>Unified Enterprise Authentication</span>
         </div>
@@ -106,7 +114,7 @@ export default function LoginLandingPage() {
               <div
                 key={portal.id}
                 onClick={() => navigate(portal.path)}
-                className={`group relative flex flex-col justify-between p-7 rounded-2xl bg-[#091322]/90 backdrop-blur-sm border ${portal.borderColor} transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl ${portal.glowColor} cursor-pointer text-left`}
+                className={`group relative flex flex-col justify-between p-7 rounded-2xl bg-[#0C0A1D]/90 backdrop-blur-sm border ${portal.borderColor} transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl ${portal.glowColor} cursor-pointer text-left`}
               >
                 {/* Gradient background sheen */}
                 <div
@@ -128,7 +136,7 @@ export default function LoginLandingPage() {
 
                   {/* Title & Audience */}
                   <div>
-                    <h2 className="text-xl font-bold text-white tracking-tight group-hover:text-cyan-300 transition-colors">
+                    <h2 className="text-xl font-bold text-white tracking-tight group-hover:text-[#C4B5FD] transition-colors">
                       {portal.title}
                     </h2>
                     <p className="text-xs font-medium text-slate-400 mt-0.5">
@@ -155,6 +163,34 @@ export default function LoginLandingPage() {
                     <span>{portal.buttonText}</span>
                     <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
                   </button>
+
+                  {portal.id === "analyst" && (
+                    <div className="mt-2.5 text-center">
+                      <Link
+                        to="/register?role=analyst"
+                        state={{ role: "analyst" }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[11px] text-slate-400 hover:text-indigo-300 transition-colors inline-flex items-center gap-1"
+                      >
+                        <span>New analyst? Apply for an account</span>
+                        <span>→</span>
+                      </Link>
+                    </div>
+                  )}
+
+                  {portal.id === "user" && (
+                    <div className="mt-2.5 text-center">
+                      <Link
+                        to="/register?role=user"
+                        state={{ role: "user" }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[11px] text-slate-400 hover:text-[#C4B5FD] transition-colors inline-flex items-center gap-1"
+                      >
+                        <span>New borrower? Create MSME account</span>
+                        <span>→</span>
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -164,7 +200,7 @@ export default function LoginLandingPage() {
         {/* Security & Role Integrity Note */}
         <div className="mt-12 max-w-xl text-center space-y-2 text-xs text-slate-400">
           <div className="flex items-center justify-center gap-2 text-slate-400">
-            <Lock className="w-3.5 h-3.5 text-cyan-400" />
+            <Lock className="w-3.5 h-3.5 text-[#A78BFA]" />
             <span>Strict Role-Based Access Control Enforced</span>
           </div>
           <p className="text-[11px] text-slate-500">
@@ -174,9 +210,9 @@ export default function LoginLandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 w-full border-t border-[#112038] bg-[#03060f]/80 py-6 px-6 text-center text-xs text-slate-400 space-y-2">
+      <footer className="relative z-10 w-full border-t border-[#383154] bg-[#0C0A1D]/80 py-6 px-6 text-center text-xs text-slate-400 space-y-2">
         <div className="flex items-center justify-center gap-2 text-slate-300 font-semibold text-xs">
-          <ShieldCheck className="w-4 h-4 text-cyan-400" />
+          <ShieldCheck className="w-4 h-4 text-[#A78BFA]" />
           <span>AI-Assisted Credit Risk Assessment</span>
         </div>
         <p className="max-w-2xl mx-auto text-[11px] leading-relaxed">

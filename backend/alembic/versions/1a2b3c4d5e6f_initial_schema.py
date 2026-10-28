@@ -19,8 +19,11 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     conn = op.get_bind()
-    inspector = inspect(conn)
-    existing_tables = set(inspector.get_table_names())
+    try:
+        inspector = inspect(conn)
+        existing_tables = set(inspector.get_table_names())
+    except Exception:
+        existing_tables = set()
 
     # 1. users
     if "users" not in existing_tables:
@@ -160,8 +163,11 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     conn = op.get_bind()
-    inspector = inspect(conn)
-    existing_tables = set(inspector.get_table_names())
+    try:
+        inspector = inspect(conn)
+        existing_tables = set(inspector.get_table_names())
+    except Exception:
+        existing_tables = set()
     for tbl in [
         "audit_logs", "alert_rules", "notifications", "documents",
         "reports", "predictions", "assessments", "businesses", "users"

@@ -80,7 +80,7 @@ export default function AdminRiskIntelligence() {
   const avgRiskScore = Math.round(100 - avgDefaultProb);
 
   return (
-    <div className="flex min-h-screen bg-[#030712] text-slate-100">
+    <div className="flex min-h-screen bg-[#0C0A1D] text-slate-100">
       <Sidebar active="Risk Intelligence" />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
@@ -96,16 +96,16 @@ export default function AdminRiskIntelligence() {
         <main className="p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
           {/* Top Platform AI Insights KPIs */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b] shadow-md">
+            <div className="p-4 rounded-2xl bg-[#0C0A1D] border border-[#383154] shadow-md">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-semibold text-slate-400">Avg. Default Probability</span>
-                <TrendingUp className="w-4 h-4 text-cyan-400" />
+                <TrendingUp className="w-4 h-4 text-[#A78BFA]" />
               </div>
-              <div className="text-2xl font-bold text-cyan-300">{avgDefaultProb}%</div>
+              <div className="text-2xl font-bold text-[#C4B5FD]">{avgDefaultProb}%</div>
               <div className="text-[11px] text-slate-400 mt-1">Across Portfolio Baseline</div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b] shadow-md">
+            <div className="p-4 rounded-2xl bg-[#0C0A1D] border border-[#383154] shadow-md">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-semibold text-slate-400">Avg. Risk Health Score</span>
                 <Activity className="w-4 h-4 text-emerald-400" />
@@ -114,7 +114,7 @@ export default function AdminRiskIntelligence() {
               <div className="text-[11px] text-slate-400 mt-1">Solvency Index</div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b] shadow-md">
+            <div className="p-4 rounded-2xl bg-[#0C0A1D] border border-[#383154] shadow-md">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-semibold text-slate-400">Total Inferences Run</span>
                 <Cpu className="w-4 h-4 text-purple-400" />
@@ -123,7 +123,7 @@ export default function AdminRiskIntelligence() {
               <div className="text-[11px] text-slate-400 mt-1">Real-time XGBoost runs</div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b] shadow-md">
+            <div className="p-4 rounded-2xl bg-[#0C0A1D] border border-[#383154] shadow-md">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-semibold text-slate-400">Active Model Version</span>
                 <BrainCircuit className="w-4 h-4 text-indigo-400" />
@@ -134,7 +134,7 @@ export default function AdminRiskIntelligence() {
           </div>
 
           {/* Section: Risk Distribution Details */}
-          <div className="p-6 rounded-2xl bg-[#081120] border border-[#1a2d4b] shadow-lg space-y-5">
+          <div className="p-6 rounded-2xl bg-[#0C0A1D] border border-[#383154] shadow-lg space-y-5">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-white">Platform Exposure by Risk Tier</h3>
@@ -142,7 +142,7 @@ export default function AdminRiskIntelligence() {
               </div>
               <button
                 onClick={loadData}
-                className="p-1.5 rounded-lg bg-[#0d1c33] border border-[#1d3559] text-slate-300 hover:text-white transition"
+                className="p-1.5 rounded-lg bg-[#1C1933] border border-[#1d3559] text-slate-300 hover:text-white transition"
               >
                 <RefreshCw className="w-4 h-4" />
               </button>
@@ -172,7 +172,7 @@ export default function AdminRiskIntelligence() {
 
             {/* Breakdown Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 rounded-xl bg-[#0c182a] border border-emerald-500/30">
+              <div className="p-4 rounded-xl bg-[#1C1933] border border-emerald-500/30">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-bold text-emerald-400">Tier A / Low Risk</span>
                   <span className="text-xs font-bold text-white">{lowPct}%</span>
@@ -183,7 +183,7 @@ export default function AdminRiskIntelligence() {
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl bg-[#0c182a] border border-amber-500/30">
+              <div className="p-4 rounded-xl bg-[#1C1933] border border-amber-500/30">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-bold text-amber-400">Tier B / Medium Risk</span>
                   <span className="text-xs font-bold text-white">{medPct}%</span>
@@ -194,7 +194,7 @@ export default function AdminRiskIntelligence() {
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl bg-[#0c182a] border border-rose-500/30">
+              <div className="p-4 rounded-xl bg-[#1C1933] border border-rose-500/30">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-bold text-rose-400">Tier C / High Risk</span>
                   <span className="text-xs font-bold text-white">{highPct}%</span>
@@ -208,39 +208,39 @@ export default function AdminRiskIntelligence() {
           </div>
 
           {/* Section 15: RESPONSIBLE AI GOVERNANCE */}
-          <div className="p-6 rounded-2xl bg-[#091526] border border-[#1e3458] shadow-lg space-y-4">
-            <div className="flex items-center gap-2.5 text-cyan-400">
+          <div className="p-6 rounded-2xl bg-[#0C0A1D] border border-[#383154] shadow-lg space-y-4">
+            <div className="flex items-center gap-2.5 text-[#A78BFA]">
               <BrainCircuit className="w-5 h-5" />
               <h3 className="text-base font-bold text-white">Responsible AI Governance & Limitations</h3>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-cyan-950/30 border border-cyan-500/30 text-xs text-cyan-200 leading-relaxed">
+            <div className="p-3.5 rounded-xl bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 text-xs text-[#DDD6FE] leading-relaxed">
               <strong>Mandatory Compliance Notice:</strong> MSME Risk AI provides algorithmic decision support and does NOT autonomously issue final credit approvals or rejections. All critical underwriting verdicts require human reviewer confirmation.
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-              <div className="p-3 rounded-xl bg-[#0a172a] border border-[#162742]">
+              <div className="p-3 rounded-xl bg-[#1C1933] border border-[#383154]">
                 <strong className="text-slate-200 block mb-1">Human-in-the-Loop</strong>
                 <p className="text-slate-400 leading-relaxed text-[11px]">
                   All high and medium exposure assessments must be reviewed by institutional analysts before disbursement.
                 </p>
               </div>
 
-              <div className="p-3 rounded-xl bg-[#0a172a] border border-[#162742]">
+              <div className="p-3 rounded-xl bg-[#1C1933] border border-[#383154]">
                 <strong className="text-slate-200 block mb-1">Drift Monitoring</strong>
                 <p className="text-slate-400 leading-relaxed text-[11px]">
                   Kolmogorov-Smirnov statistical tests run against training distributions to identify macroeconomic shift.
                 </p>
               </div>
 
-              <div className="p-3 rounded-xl bg-[#0a172a] border border-[#162742]">
+              <div className="p-3 rounded-xl bg-[#1C1933] border border-[#383154]">
                 <strong className="text-slate-200 block mb-1">SHAP Explainability</strong>
                 <p className="text-slate-400 leading-relaxed text-[11px]">
                   Every risk tier includes positive and negative feature impact factors to prevent unexplainable black-box decisions.
                 </p>
               </div>
 
-              <div className="p-3 rounded-xl bg-[#0a172a] border border-[#162742]">
+              <div className="p-3 rounded-xl bg-[#1C1933] border border-[#383154]">
                 <strong className="text-slate-200 block mb-1">Fairness Metrics</strong>
                 <p className="text-slate-400 leading-relaxed text-[11px]">
                   Protected class demographic parity metrics are not currently calculated on financial ledger features.

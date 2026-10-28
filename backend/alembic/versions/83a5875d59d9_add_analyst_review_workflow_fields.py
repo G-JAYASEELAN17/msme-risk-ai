@@ -21,9 +21,14 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Upgrade schema."""
     conn = op.get_bind()
-    from sqlalchemy import inspect
-    inspector = inspect(conn)
-    columns = [c['name'] for c in inspector.get_columns('assessments')]
+    columns = []
+    if conn is not None:
+        try:
+            from sqlalchemy import inspect
+            inspector = inspect(conn)
+            columns = [c['name'] for c in inspector.get_columns('assessments')]
+        except Exception:
+            columns = []
     if 'additional_comments' not in columns:
         op.add_column('assessments', sa.Column('additional_comments', sa.Text(), nullable=True))
 
@@ -31,8 +36,13 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Downgrade schema."""
     conn = op.get_bind()
-    from sqlalchemy import inspect
-    inspector = inspect(conn)
-    columns = [c['name'] for c in inspector.get_columns('assessments')]
+    columns = []
+    if conn is not None:
+        try:
+            from sqlalchemy import inspect
+            inspector = inspect(conn)
+            columns = [c['name'] for c in inspector.get_columns('assessments')]
+        except Exception:
+            columns = []
     if 'additional_comments' in columns:
         op.drop_column('assessments', 'additional_comments')

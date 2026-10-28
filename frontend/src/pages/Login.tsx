@@ -151,11 +151,11 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[#060b14] text-slate-100">
+    <div className="min-h-screen w-full flex bg-[#151229] text-slate-100">
       {/* Left visual showcase panel - desktop only */}
-      <div className="hidden lg:flex lg:w-1/2 relative flex-col justify-between p-12 overflow-hidden border-r border-[#15253d] bg-gradient-to-br from-[#091527] via-[#0b172d] to-[#070f1c]">
+      <div className="hidden lg:flex lg:w-1/2 relative flex-col justify-between p-12 overflow-hidden border-r border-[#383154] bg-gradient-to-br from-[#1C1933] via-[#1C1933] to-[#0C0A1D]">
         {/* Ambient background glow elements */}
-        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-[#8B5CF6]/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-1/3 -right-20 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10">
@@ -163,13 +163,13 @@ export default function Login() {
         </div>
 
         <div className="relative z-10 my-auto py-10 max-w-lg">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-semibold uppercase tracking-wider mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#8B5CF6]/10 border border-[#8B5CF6]/20 text-[#A78BFA] text-xs font-semibold uppercase tracking-wider mb-6">
             <BrainCircuit className="w-4 h-4" />
             AI-Powered MSME Risk Analysis
           </div>
 
           <h1 className="text-4xl xl:text-5xl font-bold tracking-tight text-white leading-tight font-['Space_Grotesk'] mb-4">
-            Underwrite MSME loans with <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">machine clarity</span>.
+            Underwrite MSME loans with <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#8B5CF6] to-blue-500">machine clarity</span>.
           </h1>
 
           <p className="text-slate-300 text-base leading-relaxed mb-8">
@@ -179,7 +179,7 @@ export default function Login() {
           {/* Value cards */}
           <div className="grid grid-cols-2 gap-4">
             <div className="p-4 rounded-xl bg-[#0e1f38]/60 border border-[#1b355a] backdrop-blur-sm">
-              <div className="flex items-center gap-2.5 text-cyan-400 text-xs font-semibold mb-1">
+              <div className="flex items-center gap-2.5 text-[#A78BFA] text-xs font-semibold mb-1">
                 <Sparkles className="w-4 h-4" />
                 Explainable Signals
               </div>
@@ -200,7 +200,7 @@ export default function Login() {
           </div>
         </div>
 
-        <div className="relative z-10 flex items-center justify-between text-xs text-slate-400 pt-6 border-t border-[#16273f]">
+        <div className="relative z-10 flex items-center justify-between text-xs text-slate-400 pt-6 border-t border-[#383154]">
           <span>© 2026 MSME Risk AI. Enterprise Grade.</span>
           <span className="flex items-center gap-1.5 text-emerald-400">
             <ShieldCheck className="w-4 h-4" />
@@ -230,10 +230,10 @@ export default function Login() {
             type="button"
             onClick={handleGoogleLogin}
             disabled={googleLoading || loading}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl bg-[#0f1d33] hover:bg-[#152744] text-white border border-[#22395a] hover:border-[#355787] text-sm font-semibold transition-all duration-200 shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-500/40 disabled:opacity-50 disabled:cursor-not-allowed mb-6"
+            className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl bg-[#1C1933] hover:bg-[#152744] text-white border border-[#22395a] hover:border-[#355787] text-sm font-semibold transition-all duration-200 shadow-md focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]/40 disabled:opacity-50 disabled:cursor-not-allowed mb-6"
           >
             {googleLoading ? (
-              <span className="w-5 h-5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+              <span className="w-5 h-5 border-2 border-[#8B5CF6] border-t-transparent rounded-full animate-spin" />
             ) : (
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -258,9 +258,9 @@ export default function Login() {
           </button>
 
           <div className="flex items-center gap-3 my-6 text-slate-500 text-xs uppercase font-medium">
-            <div className="h-px flex-1 bg-[#1a2c47]" />
+            <div className="h-px flex-1 bg-[#252141]" />
             <span>or continue with email</span>
-            <div className="h-px flex-1 bg-[#1a2c47]" />
+            <div className="h-px flex-1 bg-[#252141]" />
           </div>
 
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
@@ -304,7 +304,7 @@ export default function Login() {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="rounded border-[#1e324e] bg-[#0a1424] text-cyan-500 focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                  className="rounded border-[#1e324e] bg-[#1C1933] text-[#8B5CF6] focus:ring-0 focus:ring-offset-0 cursor-pointer"
                 />
                 <span>Remember email</span>
               </label>
@@ -312,7 +312,7 @@ export default function Login() {
               <button
                 type="button"
                 onClick={handleForgotPassword}
-                className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors focus:outline-none"
+                className="text-[#A78BFA] hover:text-[#C4B5FD] font-medium transition-colors focus:outline-none"
               >
                 Forgot password?
               </button>
@@ -350,13 +350,13 @@ export default function Login() {
             Don’t have an account?{" "}
             <Link
               to="/register"
-              className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors"
+              className="text-[#A78BFA] hover:text-[#C4B5FD] font-semibold transition-colors"
             >
               Create free workspace
             </Link>
           </p>
 
-          <div className="mt-8 pt-6 border-t border-[#16273f] text-center text-[11px] text-slate-400">
+          <div className="mt-8 pt-6 border-t border-[#383154] text-center text-[11px] text-slate-400">
             Protected by Firebase Auth with enterprise rate-limiting and encryption.
           </div>
         </div>

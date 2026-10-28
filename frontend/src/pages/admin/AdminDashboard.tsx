@@ -23,74 +23,50 @@ import {
   Info,
 } from "lucide-react";
 import { api, AdminSystemStats, AssessmentSummary } from "../../services/api";
-import LoadingSpinner from "../../components/LoadingSpinner";
 import EmptyState from "../../components/ui/EmptyState";
 import Card, { CardHeader, CardTitle, CardContent } from "../../components/ui/Card";
+import { DashboardSkeleton, KpiCardSkeleton } from "../../components/ui/Skeleton";
+import { useQuery } from "@tanstack/react-query";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-
-  const [stats, setStats] = useState<AdminSystemStats | null>(null);
-  const [health, setHealth] = useState<{
-    status: string;
-    application: string;
-    database: string;
-    database_type: string;
-    environment: string;
-    version: string;
-  } | null>(null);
-  const [readiness, setReadiness] = useState<{
-    ready: boolean;
-    database: string;
-    ml_model: string;
-    model_version?: string;
-  } | null>(null);
-  const [recentAssessments, setRecentAssessments] = useState<AssessmentSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastChecked, setLastChecked] = useState<string>("");
   const [activityFilter, setActivityFilter] = useState<"7d" | "30d" | "90d" | "all">("30d");
 
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  const {
+    data: stats = null,
+    isLoading: loading,
+    error: statsError,
+    refetch: refetchStats,
+  } = useQuery<AdminSystemStats>({
+    queryKey: ["admin-stats"],
+    queryFn: () => api.getAdminStats(),
+    staleTime: 30 * 1000,
+  });
 
-      const [adminStatsRes, healthRes, readyRes, assessRes] = await Promise.allSettled([
-        api.getAdminStats(),
-        api.getHealth(),
-        api.getReadiness(),
-        api.getAssessments({ all_users: true, limit: 10 }),
-      ]);
+  const { data: health = null } = useQuery({
+    queryKey: ["system-health"],
+    queryFn: () => api.getHealth(),
+    staleTime: 60 * 1000,
+  });
 
-      if (adminStatsRes.status === "fulfilled") {
-        setStats(adminStatsRes.value);
-      } else {
-        throw new Error("Failed to load platform statistics.");
-      }
+  const { data: readiness = null } = useQuery({
+    queryKey: ["system-readiness"],
+    queryFn: () => api.getReadiness(),
+    staleTime: 60 * 1000,
+  });
 
-      if (healthRes.status === "fulfilled") {
-        setHealth(healthRes.value);
-      }
-      if (readyRes.status === "fulfilled") {
-        setReadiness(readyRes.value);
-      }
-      if (assessRes.status === "fulfilled") {
-        setRecentAssessments(assessRes.value || []);
-      }
+  const { data: recentAssessments = [] } = useQuery<AssessmentSummary[]>({
+    queryKey: ["admin-recent-assessments"],
+    queryFn: () => api.getAssessments({ all_users: true, limit: 10 }),
+    staleTime: 30 * 1000,
+  });
 
-      setLastChecked(new Date().toLocaleTimeString());
-    } catch (err: any) {
-      console.error("Admin dashboard load error:", err);
-      setError(err?.message || "Failed to load admin telemetry data.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const error = statsError ? (statsError as Error).message : null;
+  const lastChecked = new Date().toLocaleTimeString();
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const loadData = async () => {
+    await refetchStats();
+  };
 
   // Derived metrics from real backend data
   const totalUsers = stats?.total_users ?? 0;
@@ -123,15 +99,15 @@ export default function AdminDashboard() {
   const isDbHealthy = health?.database === "healthy" || readiness?.database === "ready";
   const isModelReady = readiness?.ml_model === "loaded" || readiness?.ready === true;
 
-  if (loading) {
+  if (loading && !stats) {
     return (
-      <div className="flex min-h-screen bg-[#030712] text-slate-100">
+      <div className="flex min-h-screen bg-[#0C0A1D] text-slate-100 font-sans">
         <Sidebar active="Overview" />
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           <AdminHeader />
-          <div className="flex-1 flex items-center justify-center p-8">
-            <LoadingSpinner text="Retrieving platform intelligence & system health..." />
-          </div>
+          <main className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+            <DashboardSkeleton />
+          </main>
         </div>
       </div>
     );
@@ -139,7 +115,7 @@ export default function AdminDashboard() {
 
   if (error && !stats) {
     return (
-      <div className="flex min-h-screen bg-[#030712] text-slate-100">
+      <div className="flex min-h-screen bg-[#0C0A1D] text-slate-100 font-sans">
         <Sidebar active="Overview" />
         <div className="flex-1 flex flex-col">
           <AdminHeader />
@@ -157,7 +133,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#030712] text-slate-100">
+    <div className="flex min-h-screen bg-[#0C0A1D] text-slate-100 font-sans">
       <Sidebar active="Overview" />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
@@ -168,20 +144,20 @@ export default function AdminDashboard() {
 
         <main className="p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
           {/* Top Info Bar / Responsible AI Notice */}
-          <div className="p-3.5 rounded-2xl bg-blue-950/30 border border-blue-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2.5 text-blue-300">
-              <BrainCircuit className="w-4 h-4 text-cyan-400 shrink-0" />
+          <div className="p-3.5 rounded-xl bg-[#1C1933] border border-[#383154] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-sm">
+            <div className="flex items-center gap-2.5 text-slate-300">
+              <BrainCircuit className="w-4 h-4 text-[#A78BFA] shrink-0" />
               <span>
-                <strong>AI-Assisted Credit Risk Assessment:</strong> Provides decision support telemetry; does not autonomously approve or reject credit.
+                <strong className="text-white font-display">AI-Assisted Credit Risk Assessment:</strong> Provides decision support telemetry; does not autonomously approve or reject credit.
               </span>
             </div>
             <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
-              <span className="text-slate-400 text-[11px]">
+              <span className="text-slate-400 text-[11px] font-mono-numeric tabular-nums">
                 Last checked: <span className="text-slate-200">{lastChecked || "Just now"}</span>
               </span>
               <button
                 onClick={loadData}
-                className="p-1.5 rounded-lg bg-[#0d1c33] border border-[#1e3458] text-slate-300 hover:text-white hover:bg-slate-800 transition"
+                className="p-1.5 rounded-lg bg-[#1C1933] border border-[#383154] text-slate-300 hover:text-white hover:border-[#8B5CF6]/40 hover:bg-[#252141] transition"
                 title="Refresh Metrics"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
@@ -192,7 +168,7 @@ export default function AdminDashboard() {
           {/* Section 4: KPI CARDS (9 cards as required) */}
           <section aria-labelledby="kpi-heading">
             <div className="flex items-center justify-between mb-3">
-              <h2 id="kpi-heading" className="text-sm font-bold uppercase tracking-wider text-slate-400">
+              <h2 id="kpi-heading" className="text-xs font-bold uppercase tracking-wider text-slate-400 font-display">
                 Platform Key Metrics
               </h2>
               <span className="text-xs text-slate-400">Live authoritative counts</span>
@@ -202,15 +178,15 @@ export default function AdminDashboard() {
               {/* Total Users */}
               <div
                 onClick={() => navigate("/admin/users")}
-                className="p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b] hover:border-cyan-500/40 cursor-pointer transition group shadow-md"
+                className="p-4 rounded-xl bg-[#1C1933] border border-[#383154] hover:border-[#8B5CF6]/40 hover:bg-[#1C1933] cursor-pointer transition group shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-400">Total Users</span>
-                  <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center">
                     <Users className="w-4 h-4" />
                   </div>
                 </div>
-                <div className="mt-3 text-2xl font-bold text-white group-hover:text-cyan-300 transition">
+                <div className="mt-3 text-2xl font-bold text-white group-hover:text-[#C4B5FD] transition font-mono-numeric tabular-nums">
                   {totalUsers}
                 </div>
                 <div className="mt-1 text-[11px] text-slate-400 flex items-center gap-1">
@@ -221,15 +197,15 @@ export default function AdminDashboard() {
               {/* Total MSME Businesses */}
               <div
                 onClick={() => navigate("/admin/businesses")}
-                className="p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b] hover:border-cyan-500/40 cursor-pointer transition group shadow-md"
+                className="p-4 rounded-xl bg-[#1C1933] border border-[#383154] hover:border-[#8B5CF6]/40 hover:bg-[#1C1933] cursor-pointer transition group shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-400">Total Businesses</span>
-                  <div className="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-[#8B5CF6]/10 text-[#A78BFA] border border-[#8B5CF6]/20 flex items-center justify-center">
                     <Building2 className="w-4 h-4" />
                   </div>
                 </div>
-                <div className="mt-3 text-2xl font-bold text-white group-hover:text-cyan-300 transition">
+                <div className="mt-3 text-2xl font-bold text-white group-hover:text-[#C4B5FD] transition font-mono-numeric tabular-nums">
                   {totalBusinesses}
                 </div>
                 <div className="mt-1 text-[11px] text-slate-400">Registered MSMEs</div>
@@ -238,15 +214,15 @@ export default function AdminDashboard() {
               {/* Total Assessments */}
               <div
                 onClick={() => navigate("/admin/assessments")}
-                className="p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b] hover:border-cyan-500/40 cursor-pointer transition group shadow-md"
+                className="p-4 rounded-xl bg-[#1C1933] border border-[#383154] hover:border-purple-500/40 hover:bg-[#1C1933] cursor-pointer transition group shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-400">Total Assessments</span>
-                  <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center">
                     <FileCheck className="w-4 h-4" />
                   </div>
                 </div>
-                <div className="mt-3 text-2xl font-bold text-white group-hover:text-purple-300 transition">
+                <div className="mt-3 text-2xl font-bold text-white group-hover:text-purple-300 transition font-mono-numeric tabular-nums">
                   {totalAssessments}
                 </div>
                 <div className="mt-1 text-[11px] text-slate-400">Lifetime Risk Runs</div>
@@ -255,15 +231,15 @@ export default function AdminDashboard() {
               {/* Pending Analyst Reviews */}
               <div
                 onClick={() => navigate("/admin/assessments?status=pending")}
-                className="p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b] hover:border-amber-500/40 cursor-pointer transition group shadow-md"
+                className="p-4 rounded-xl bg-[#1C1933] border border-[#383154] hover:border-amber-500/40 hover:bg-[#1C1933] cursor-pointer transition group shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-400">Pending Reviews</span>
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center">
                     <Clock className="w-4 h-4" />
                   </div>
                 </div>
-                <div className="mt-3 text-2xl font-bold text-amber-400">
+                <div className="mt-3 text-2xl font-bold text-amber-400 font-mono-numeric tabular-nums">
                   {pendingReviews}
                 </div>
                 <div className="mt-1 text-[11px] text-slate-400">Awaiting Analyst Queue</div>
@@ -272,15 +248,15 @@ export default function AdminDashboard() {
               {/* Completed Reviews */}
               <div
                 onClick={() => navigate("/admin/assessments?status=completed")}
-                className="p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b] hover:border-emerald-500/40 cursor-pointer transition group shadow-md"
+                className="p-4 rounded-xl bg-[#1C1933] border border-[#383154] hover:border-emerald-500/40 hover:bg-[#1C1933] cursor-pointer transition group shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-400">Completed Reviews</span>
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
                     <CheckCircle2 className="w-4 h-4" />
                   </div>
                 </div>
-                <div className="mt-3 text-2xl font-bold text-emerald-400">
+                <div className="mt-3 text-2xl font-bold text-emerald-400 font-mono-numeric tabular-nums">
                   {completedReviews}
                 </div>
                 <div className="mt-1 text-[11px] text-slate-400">Approved & Rejected</div>
@@ -289,60 +265,60 @@ export default function AdminDashboard() {
               {/* Low Risk */}
               <div
                 onClick={() => navigate("/admin/assessments?risk=low")}
-                className="p-4 rounded-2xl bg-[#081120] border border-emerald-500/20 hover:border-emerald-500/40 cursor-pointer transition group shadow-md"
+                className="p-4 rounded-xl bg-[#1C1933] border border-emerald-500/20 hover:border-emerald-500/40 hover:bg-[#1C1933] cursor-pointer transition group shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-400">Low Risk</span>
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 font-mono-numeric tabular-nums">
                     {lowPct}%
                   </span>
                 </div>
-                <div className="mt-3 text-2xl font-bold text-emerald-400">{lowRisk}</div>
+                <div className="mt-3 text-2xl font-bold text-emerald-400 font-mono-numeric tabular-nums">{lowRisk}</div>
                 <div className="mt-1 text-[11px] text-slate-400">Grade Tier A/B</div>
               </div>
 
               {/* Medium Risk */}
               <div
                 onClick={() => navigate("/admin/assessments?risk=medium")}
-                className="p-4 rounded-2xl bg-[#081120] border border-amber-500/20 hover:border-amber-500/40 cursor-pointer transition group shadow-md"
+                className="p-4 rounded-xl bg-[#1C1933] border border-amber-500/20 hover:border-amber-500/40 hover:bg-[#1C1933] cursor-pointer transition group shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-400">Medium Risk</span>
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/25 font-mono-numeric tabular-nums">
                     {medPct}%
                   </span>
                 </div>
-                <div className="mt-3 text-2xl font-bold text-amber-400">{medRisk}</div>
+                <div className="mt-3 text-2xl font-bold text-amber-400 font-mono-numeric tabular-nums">{medRisk}</div>
                 <div className="mt-1 text-[11px] text-slate-400">Moderate Exposure</div>
               </div>
 
               {/* High Risk */}
               <div
                 onClick={() => navigate("/admin/assessments?risk=high")}
-                className="p-4 rounded-2xl bg-[#081120] border border-rose-500/20 hover:border-rose-500/40 cursor-pointer transition group shadow-md"
+                className="p-4 rounded-xl bg-[#1C1933] border border-rose-500/20 hover:border-rose-500/40 hover:bg-[#1C1933] cursor-pointer transition group shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-400">High Risk</span>
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/25 font-mono-numeric tabular-nums">
                     {highPct}%
                   </span>
                 </div>
-                <div className="mt-3 text-2xl font-bold text-rose-400">{highRisk}</div>
+                <div className="mt-3 text-2xl font-bold text-rose-400 font-mono-numeric tabular-nums">{highRisk}</div>
                 <div className="mt-1 text-[11px] text-slate-400">Critical Scrutiny</div>
               </div>
 
               {/* Documents Processed */}
               <div
                 onClick={() => navigate("/admin/documents")}
-                className="col-span-2 sm:col-span-1 p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b] hover:border-cyan-500/40 cursor-pointer transition group shadow-md"
+                className="col-span-2 sm:col-span-1 p-4 rounded-xl bg-[#1C1933] border border-[#383154] hover:border-[#8B5CF6]/40 hover:bg-[#1C1933] cursor-pointer transition group shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-400">Documents Processed</span>
-                  <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center">
                     <FileText className="w-4 h-4" />
                   </div>
                 </div>
-                <div className="mt-3 text-2xl font-bold text-white group-hover:text-indigo-300 transition">
+                <div className="mt-3 text-2xl font-bold text-white group-hover:text-indigo-300 transition font-mono-numeric tabular-nums">
                   {totalDocs}
                 </div>
                 <div className="mt-1 text-[11px] text-slate-400">OCR Statements Extracted</div>
@@ -353,7 +329,7 @@ export default function AdminDashboard() {
           {/* Section 5: PLATFORM HEALTH */}
           <section aria-labelledby="health-heading">
             <div className="flex items-center justify-between mb-3">
-              <h2 id="health-heading" className="text-sm font-bold uppercase tracking-wider text-slate-400">
+              <h2 id="health-heading" className="text-xs font-bold uppercase tracking-wider text-slate-400 font-display">
                 Platform Health & Telemetry
               </h2>
               <span className="text-xs text-slate-400">Authoritative service probes</span>
@@ -361,35 +337,35 @@ export default function AdminDashboard() {
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               {/* Backend API */}
-              <div className="p-3.5 rounded-2xl bg-[#081120] border border-[#1a2d4b] flex flex-col justify-between">
+              <div className="p-3.5 rounded-xl bg-[#1C1933] border border-[#383154] flex flex-col justify-between shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-semibold text-slate-300">Backend API</span>
-                  <Activity className="w-3.5 h-3.5 text-cyan-400" />
+                  <Activity className="w-3.5 h-3.5 text-[#A78BFA]" />
                 </div>
                 <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-400">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50" />
                   Healthy
                 </div>
-                <span className="text-[10px] text-slate-400 mt-1">FastAPI v{health?.version || "1.1.0"}</span>
+                <span className="text-[10px] text-slate-400 mt-1 font-mono-numeric">FastAPI v{health?.version || "1.1.0"}</span>
               </div>
 
               {/* Database */}
-              <div className="p-3.5 rounded-2xl bg-[#081120] border border-[#1a2d4b] flex flex-col justify-between">
+              <div className="p-3.5 rounded-xl bg-[#1C1933] border border-[#383154] flex flex-col justify-between shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-semibold text-slate-300">Database</span>
-                  <Database className="w-3.5 h-3.5 text-cyan-400" />
+                  <Database className="w-3.5 h-3.5 text-[#A78BFA]" />
                 </div>
-                <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-400">
-                  <span className={`w-2 h-2 rounded-full ${isDbHealthy ? "bg-emerald-400 shadow-sm shadow-emerald-400/50" : "bg-rose-400"}`} />
-                  {isDbHealthy ? "Healthy" : "Degraded"}
+                <div className={`flex items-center gap-1.5 text-xs font-medium ${isDbHealthy ? "text-emerald-400" : "text-rose-400"}`}>
+                  <span className={`w-2 h-2 rounded-full ${isDbHealthy ? "bg-emerald-400 shadow-sm shadow-emerald-400/50" : "bg-rose-400 shadow-sm shadow-rose-400/50"}`} />
+                  {isDbHealthy ? "Healthy" : (health?.failure_category ? health.failure_category.replace(/_/g, " ") : "Degraded")}
                 </div>
-                <span className="text-[10px] text-slate-400 mt-1 capitalize">
-                  {health?.database_type || "PostgreSQL"} Engine
+                <span className="text-[10px] text-slate-400 mt-1 capitalize font-mono-numeric">
+                  {health?.database_type || "PostgreSQL"} {health?.latency_ms !== undefined ? `(${health.latency_ms}ms)` : "Engine"}
                 </span>
               </div>
 
               {/* Authentication */}
-              <div className="p-3.5 rounded-2xl bg-[#081120] border border-[#1a2d4b] flex flex-col justify-between">
+              <div className="p-3.5 rounded-xl bg-[#1C1933] border border-[#383154] flex flex-col justify-between shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-semibold text-slate-300">Authentication</span>
                   <KeyRound className="w-3.5 h-3.5 text-purple-400" />
@@ -402,7 +378,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* Document Storage */}
-              <div className="p-3.5 rounded-2xl bg-[#081120] border border-[#1a2d4b] flex flex-col justify-between">
+              <div className="p-3.5 rounded-xl bg-[#1C1933] border border-[#383154] flex flex-col justify-between shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-semibold text-slate-300">Document Storage</span>
                   <HardDrive className="w-3.5 h-3.5 text-blue-400" />
@@ -415,7 +391,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* AI Prediction Service */}
-              <div className="p-3.5 rounded-2xl bg-[#081120] border border-[#1a2d4b] flex flex-col justify-between">
+              <div className="p-3.5 rounded-xl bg-[#1C1933] border border-[#383154] flex flex-col justify-between shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-semibold text-slate-300">AI Prediction</span>
                   <Cpu className="w-3.5 h-3.5 text-indigo-400" />
@@ -428,7 +404,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* OCR Service */}
-              <div className="p-3.5 rounded-2xl bg-[#081120] border border-[#1a2d4b] flex flex-col justify-between">
+              <div className="p-3.5 rounded-xl bg-[#1C1933] border border-[#383154] flex flex-col justify-between shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-semibold text-slate-300">OCR Service</span>
                   <FileText className="w-3.5 h-3.5 text-emerald-400" />
@@ -445,113 +421,113 @@ export default function AdminDashboard() {
           {/* Section 6 & 7: PORTFOLIO RISK & ACTIVITY TREND */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Risk Distribution Card (Section 6) */}
-            <div className="lg:col-span-5 bg-[#081120] border border-[#1a2d4b] rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+            <div className="lg:col-span-5 bg-[#1C1933] border border-[#383154] rounded-xl p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)] flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-cyan-400" />
-                    <h3 className="text-sm font-bold text-white">Portfolio Risk Distribution</h3>
+                    <TrendingUp className="w-4 h-4 text-[#A78BFA]" />
+                    <h3 className="text-sm font-bold text-white font-display">Portfolio Risk Distribution</h3>
                   </div>
                   <button
                     onClick={() => navigate("/admin/risk-intelligence")}
-                    className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold"
+                    className="text-xs text-[#A78BFA] hover:text-[#C4B5FD] font-semibold"
                   >
                     View Intel →
                   </button>
                 </div>
 
                 {/* Visual Distribution Bar */}
-                <div className="h-4 w-full rounded-full overflow-hidden flex bg-slate-800 shadow-inner mb-6">
+                <div className="h-3 w-full rounded-full overflow-hidden flex bg-[#1C1933] border border-[#383154] mb-6">
                   <div
                     style={{ width: `${lowPct}%` }}
-                    className="bg-emerald-500 transition-all duration-500 hover:opacity-90"
+                    className="bg-emerald-400 transition-all duration-500 hover:opacity-90"
                     title={`Low: ${lowPct}%`}
                   />
                   <div
                     style={{ width: `${medPct}%` }}
-                    className="bg-amber-500 transition-all duration-500 hover:opacity-90"
+                    className="bg-amber-400 transition-all duration-500 hover:opacity-90"
                     title={`Medium: ${medPct}%`}
                   />
                   <div
                     style={{ width: `${highPct}%` }}
-                    className="bg-rose-500 transition-all duration-500 hover:opacity-90"
+                    className="bg-rose-400 transition-all duration-500 hover:opacity-90"
                     title={`High: ${highPct}%`}
                   />
                 </div>
 
                 {/* Risk Breakdown Rows */}
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-[#0c182a] border border-[#162742]">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-[#1C1933] border border-[#383154]">
                     <div className="flex items-center gap-2.5">
-                      <span className="w-3 h-3 rounded-full bg-emerald-400" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
                       <div>
                         <div className="text-xs font-semibold text-slate-200">LOW RISK</div>
                         <div className="text-[10px] text-slate-400">Default Prob &lt; 20%</div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-bold text-emerald-400">{lowPct}%</div>
-                      <div className="text-[10px] text-slate-400">{lowRisk} assessments</div>
+                      <div className="text-sm font-bold text-emerald-400 font-mono-numeric tabular-nums">{lowPct}%</div>
+                      <div className="text-[10px] text-slate-400 font-mono-numeric tabular-nums">{lowRisk} assessments</div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-[#0c182a] border border-[#162742]">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-[#1C1933] border border-[#383154]">
                     <div className="flex items-center gap-2.5">
-                      <span className="w-3 h-3 rounded-full bg-amber-400" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
                       <div>
                         <div className="text-xs font-semibold text-slate-200">MEDIUM RISK</div>
                         <div className="text-[10px] text-slate-400">Default Prob 20% - 50%</div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-bold text-amber-400">{medPct}%</div>
-                      <div className="text-[10px] text-slate-400">{medRisk} assessments</div>
+                      <div className="text-sm font-bold text-amber-400 font-mono-numeric tabular-nums">{medPct}%</div>
+                      <div className="text-[10px] text-slate-400 font-mono-numeric tabular-nums">{medRisk} assessments</div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-[#0c182a] border border-[#162742]">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-[#1C1933] border border-[#383154]">
                     <div className="flex items-center gap-2.5">
-                      <span className="w-3 h-3 rounded-full bg-rose-400" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
                       <div>
                         <div className="text-xs font-semibold text-slate-200">HIGH RISK</div>
                         <div className="text-[10px] text-slate-400">Default Prob &gt; 50%</div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-bold text-rose-400">{highPct}%</div>
-                      <div className="text-[10px] text-slate-400">{highRisk} assessments</div>
+                      <div className="text-sm font-bold text-rose-400 font-mono-numeric tabular-nums">{highPct}%</div>
+                      <div className="text-[10px] text-slate-400 font-mono-numeric tabular-nums">{highRisk} assessments</div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-[#1a2d4b] text-[11px] text-slate-400 flex items-center justify-between">
-                <span>Total Evaluated: {totalRiskCount} portfolios</span>
-                <span className="text-slate-300 font-medium">Model: XGBoost v{health?.version || "1.1.0"}</span>
+              <div className="mt-4 pt-3 border-t border-[#383154] text-[11px] text-slate-400 flex items-center justify-between">
+                <span className="font-mono-numeric tabular-nums">Total Evaluated: {totalRiskCount} portfolios</span>
+                <span className="text-slate-300 font-medium font-mono-numeric">Model: XGBoost v{health?.version || "1.1.0"}</span>
               </div>
             </div>
 
             {/* Assessment Activity Trend (Section 7) */}
-            <div className="lg:col-span-7 bg-[#081120] border border-[#1a2d4b] rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+            <div className="lg:col-span-7 bg-[#1C1933] border border-[#383154] rounded-xl p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)] flex flex-col justify-between">
               <div>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                   <div className="flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-cyan-400" />
+                    <Activity className="w-4 h-4 text-[#A78BFA]" />
                     <div>
-                      <h3 className="text-sm font-bold text-white">Assessment Activity & Pipeline</h3>
+                      <h3 className="text-sm font-bold text-white font-display">Assessment Activity & Pipeline</h3>
                       <p className="text-[11px] text-slate-400">Underwriting throughput and review metrics</p>
                     </div>
                   </div>
 
                   {/* Filter tabs */}
-                  <div className="flex items-center p-0.5 rounded-xl bg-[#0c182b] border border-[#1d3559]">
+                  <div className="flex items-center p-0.5 rounded-lg bg-[#1C1933] border border-[#383154]">
                     {(["7d", "30d", "90d", "all"] as const).map((filterKey) => (
                       <button
                         key={filterKey}
                         onClick={() => setActivityFilter(filterKey)}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
+                        className={`px-2.5 py-1 rounded-md text-xs font-semibold transition ${
                           activityFilter === filterKey
-                            ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                            ? "bg-[#8B5CF6]/10 text-[#C4B5FD] border border-[#8B5CF6]/30"
                             : "text-slate-400 hover:text-white"
                         }`}
                       >
@@ -569,30 +545,30 @@ export default function AdminDashboard() {
 
                 {/* Pipeline Funnel Stats */}
                 <div className="grid grid-cols-3 gap-3 mb-5">
-                  <div className="p-3 rounded-xl bg-[#0d1c33] border border-[#1a2d4b] text-center">
+                  <div className="p-3 rounded-lg bg-[#1C1933] border border-[#383154] text-center">
                     <span className="text-[11px] font-semibold text-slate-400 block mb-1">Created</span>
-                    <span className="text-xl font-bold text-white">{totalAssessments}</span>
-                    <span className="text-[10px] text-cyan-400 block mt-0.5">Initiated</span>
+                    <span className="text-xl font-bold text-white font-mono-numeric tabular-nums">{totalAssessments}</span>
+                    <span className="text-[10px] text-[#A78BFA] block mt-0.5">Initiated</span>
                   </div>
-                  <div className="p-3 rounded-xl bg-[#0d1c33] border border-[#1a2d4b] text-center">
+                  <div className="p-3 rounded-lg bg-[#1C1933] border border-[#383154] text-center">
                     <span className="text-[11px] font-semibold text-slate-400 block mb-1">Under Review</span>
-                    <span className="text-xl font-bold text-amber-400">{pendingReviews}</span>
+                    <span className="text-xl font-bold text-amber-400 font-mono-numeric tabular-nums">{pendingReviews}</span>
                     <span className="text-[10px] text-amber-400/80 block mt-0.5">Analyst Queue</span>
                   </div>
-                  <div className="p-3 rounded-xl bg-[#0d1c33] border border-[#1a2d4b] text-center">
+                  <div className="p-3 rounded-lg bg-[#1C1933] border border-[#383154] text-center">
                     <span className="text-[11px] font-semibold text-slate-400 block mb-1">Decided</span>
-                    <span className="text-xl font-bold text-emerald-400">{completedReviews}</span>
+                    <span className="text-xl font-bold text-emerald-400 font-mono-numeric tabular-nums">{completedReviews}</span>
                     <span className="text-[10px] text-emerald-400/80 block mt-0.5">Approved/Rejected</span>
                   </div>
                 </div>
 
                 {/* Activity Representation */}
-                <div className="p-4 rounded-xl bg-[#0a1526] border border-[#182945] space-y-3">
+                <div className="p-4 rounded-xl bg-[#1C1933] border border-[#383154] space-y-3">
                   <div className="text-xs font-semibold text-slate-300 flex items-center justify-between">
-                    <span>Recent Pipeline Submissions</span>
+                    <span className="font-display">Recent Pipeline Submissions</span>
                     <button
                       onClick={() => navigate("/admin/assessments")}
-                      className="text-[11px] text-cyan-400 hover:underline"
+                      className="text-[11px] text-[#A78BFA] hover:underline"
                     >
                       View All Assessments →
                     </button>
@@ -603,29 +579,29 @@ export default function AdminDashboard() {
                       No recent assessment activity found for this period.
                     </div>
                   ) : (
-                    <div className="divide-y divide-slate-800/80">
+                    <div className="divide-y divide-[#383154]">
                       {recentAssessments.slice(0, 4).map((item) => (
                         <div
                           key={item.id}
                           onClick={() => navigate(`/admin/assessments`)}
-                          className="py-2.5 flex items-center justify-between hover:bg-slate-800/30 px-2 rounded-lg cursor-pointer transition"
+                          className="py-2.5 flex items-center justify-between hover:bg-[#1C1933] px-2 rounded-lg cursor-pointer transition"
                         >
                           <div className="min-w-0 flex-1">
                             <div className="text-xs font-semibold text-slate-100 truncate">
                               {item.business_name || `Business #${item.id}`}
                             </div>
-                            <div className="text-[10px] text-slate-400">
+                            <div className="text-[10px] text-slate-400 font-mono-numeric tabular-nums">
                               {item.created_at ? new Date(item.created_at).toLocaleDateString() : "Recent"} • {item.industry || "General"}
                             </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <span
-                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase border ${
+                              className={`text-[10px] font-semibold px-2 py-0.5 rounded-md uppercase border ${
                                 item.risk_level?.toLowerCase() === "low"
-                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
                                   : item.risk_level?.toLowerCase() === "high"
-                                  ? "bg-rose-500/10 text-rose-400 border-rose-500/30"
-                                  : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                                  ? "bg-rose-500/10 text-rose-400 border-rose-500/25"
+                                  : "bg-amber-500/10 text-amber-400 border-amber-500/25"
                               }`}
                             >
                               {item.risk_level || "Medium"}
@@ -641,8 +617,8 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-[#1a2d4b] text-[11px] text-slate-400 flex items-center justify-between">
-                <span>Filter applied: {activityFilter.toUpperCase()}</span>
+              <div className="mt-4 pt-3 border-t border-[#383154] text-[11px] text-slate-400 flex items-center justify-between">
+                <span>Filter applied: <strong className="text-white font-mono-numeric">{activityFilter.toUpperCase()}</strong></span>
                 <span className="text-emerald-400 flex items-center gap-1 font-medium">
                   <CheckCircle2 className="w-3 h-3" />
                   Audit logs active
@@ -655,63 +631,63 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div
               onClick={() => navigate("/admin/analysts")}
-              className="p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b] hover:border-purple-500/40 cursor-pointer transition group shadow-md"
+              className="p-4 rounded-xl bg-[#1C1933] border border-[#383154] hover:border-purple-500/40 hover:bg-[#1C1933] cursor-pointer transition group shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]"
             >
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center">
                   <Users className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white group-hover:text-purple-300 transition">
-                    Analyst Workload
+                  <h3 className="text-sm font-bold text-white group-hover:text-purple-300 transition font-display">
+                    Analyst Workload & Approvals
                   </h3>
-                  <p className="text-[11px] text-slate-400">Monitor underwriters & turnaround times</p>
+                  <p className="text-[11px] text-slate-400">Monitor underwriters & pending applications</p>
                 </div>
               </div>
               <div className="text-xs text-slate-300 mt-2 flex items-center justify-between">
-                <span>Pending Reviews: <strong className="text-amber-400">{pendingReviews}</strong></span>
+                <span>Pending Reviews: <strong className="text-amber-400 font-mono-numeric tabular-nums">{pendingReviews}</strong></span>
                 <span className="text-purple-400 group-hover:translate-x-1 transition-transform">Inspect →</span>
               </div>
             </div>
 
             <div
               onClick={() => navigate("/admin/model-monitoring")}
-              className="p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b] hover:border-cyan-500/40 cursor-pointer transition group shadow-md"
+              className="p-4 rounded-xl bg-[#1C1933] border border-[#383154] hover:border-[#8B5CF6]/40 hover:bg-[#1C1933] cursor-pointer transition group shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]"
             >
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-9 h-9 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-[#8B5CF6]/10 text-[#A78BFA] border border-[#8B5CF6]/20 flex items-center justify-center">
                   <Cpu className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white group-hover:text-cyan-300 transition">
+                  <h3 className="text-sm font-bold text-white group-hover:text-[#C4B5FD] transition font-display">
                     Model Monitoring & Drift
                   </h3>
                   <p className="text-[11px] text-slate-400">Feature statistics & drift detection</p>
                 </div>
               </div>
               <div className="text-xs text-slate-300 mt-2 flex items-center justify-between">
-                <span>Model Version: <strong className="text-cyan-400">v{health?.version || "1.1.0"}</strong></span>
-                <span className="text-cyan-400 group-hover:translate-x-1 transition-transform">Inspect →</span>
+                <span>Model Version: <strong className="text-[#A78BFA] font-mono-numeric">v{health?.version || "1.1.0"}</strong></span>
+                <span className="text-[#A78BFA] group-hover:translate-x-1 transition-transform">Inspect →</span>
               </div>
             </div>
 
             <div
               onClick={() => navigate("/admin/audit-logs")}
-              className="p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b] hover:border-emerald-500/40 cursor-pointer transition group shadow-md"
+              className="p-4 rounded-xl bg-[#1C1933] border border-[#383154] hover:border-emerald-500/40 hover:bg-[#1C1933] cursor-pointer transition group shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]"
             >
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
                   <Shield className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white group-hover:text-emerald-300 transition">
+                  <h3 className="text-sm font-bold text-white group-hover:text-emerald-300 transition font-display">
                     Audit Trail & Security
                   </h3>
                   <p className="text-[11px] text-slate-400">Immutable record of platform mutations</p>
                 </div>
               </div>
               <div className="text-xs text-slate-300 mt-2 flex items-center justify-between">
-                <span>Recent Events: <strong className="text-emerald-400">{stats?.recent_audit_events_count ?? 0}</strong></span>
+                <span>Recent Events: <strong className="text-emerald-400 font-mono-numeric tabular-nums">{stats?.recent_audit_events_count ?? 0}</strong></span>
                 <span className="text-emerald-400 group-hover:translate-x-1 transition-transform">View Logs →</span>
               </div>
             </div>

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { onAuthStateChanged } from "firebase/auth";
 import {
   FileSpreadsheet,
   Search,
@@ -38,7 +37,9 @@ import { RiskBadge } from "../components/ui/Badge";
 import EmptyState from "../components/ui/EmptyState";
 import ErrorMessage from "../components/ErrorMessage";
 import Pagination from "../components/ui/Pagination";
+import { useAuthRole } from "../context/AuthRoleContext";
 import { useToast } from "../components/ui/Toast";
+import { Skeleton, TableSkeleton } from "../components/ui/Skeleton";
 
 export default function Reports() {
   const navigate = useNavigate();
@@ -66,27 +67,21 @@ export default function Reports() {
   const [reviewNotesInput, setReviewNotesInput] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        navigate("/login");
-      } else {
-        try {
-          const prof = await api.getUserProfile();
-          setCurrentUserProfile(prof);
-        } catch {
-          // ignore profile load error
-        }
+  const { userProfile } = useAuthRole();
 
-        if (reportIdParam) {
-          fetchReportDetails(parseInt(reportIdParam, 10));
-        } else {
-          fetchAssessments();
-        }
-      }
-    });
-    return () => unsubscribe();
-  }, [reportIdParam, navigate]);
+  useEffect(() => {
+    if (userProfile) {
+      setCurrentUserProfile(userProfile);
+    }
+  }, [userProfile]);
+
+  useEffect(() => {
+    if (reportIdParam) {
+      fetchReportDetails(parseInt(reportIdParam, 10));
+    } else {
+      fetchAssessments();
+    }
+  }, [reportIdParam]);
 
   const fetchAssessments = async () => {
     try {
@@ -244,11 +239,51 @@ export default function Reports() {
 
   const isAnalystOrAdmin = ["analyst", "admin"].includes((currentUserProfile?.role || "").toLowerCase());
 
-  // 1. SINGLE DETAILED REPORT VIEW
+  // 1. REPORT DETAIL SKELETON (When loading a specific report)
+  if (reportIdParam && loading) {
+    return (
+      <div className="app-layout">
+        <Sidebar active="Reports" />
+        <main className="main-content">
+          <div className="flex items-center justify-between pb-6 mb-6 border-b border-[#383154]">
+            <Skeleton className="h-9 w-48 rounded-xl" />
+            <div className="flex gap-3">
+              <Skeleton className="h-9 w-28 rounded-xl" />
+              <Skeleton className="h-9 w-28 rounded-xl" />
+            </div>
+          </div>
+          <div className="rounded-2xl bg-[#1C1933] border border-[#383154] p-8 space-y-6">
+            <div className="flex justify-between items-center pb-6 border-b border-[#383154]">
+              <div className="flex items-center gap-3">
+                <Skeleton className="w-10 h-10 rounded-xl" />
+                <div className="space-y-1.5">
+                  <Skeleton className="h-5 w-36 rounded" />
+                  <Skeleton className="h-3.5 w-48 rounded" />
+                </div>
+              </div>
+              <Skeleton className="h-6 w-32 rounded-full" />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-[#0C0A1D] border border-[#383154]">
+              <Skeleton className="h-10 w-full rounded" />
+              <Skeleton className="h-10 w-full rounded" />
+              <Skeleton className="h-10 w-full rounded" />
+              <Skeleton className="h-10 w-full rounded" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Skeleton className="h-44 rounded-xl" />
+              <Skeleton className="h-44 rounded-xl" />
+              <Skeleton className="h-44 rounded-xl" />
+            </div>
+            <Skeleton className="h-64 rounded-xl" />
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // 2. SINGLE DETAILED REPORT VIEW
   if (reportData) {
-    const { metadata, business, financial_summary, alternative_indicators, risk_assessment } = reportData;
-    const isLow = risk_assessment.risk_level === "LOW";
-    const isMed = risk_assessment.risk_level === "MEDIUM";
+    const { metadata, business, financial_summary, risk_assessment } = reportData;
 
     return (
       <div className="app-layout">
@@ -256,7 +291,7 @@ export default function Reports() {
 
         <main className="main-content">
           {/* Header Controls (Hidden during print) */}
-          <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-6 border-b border-[#16273f]">
+          <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-6 border-b border-[#383154]">
             <Button
               variant="outline"
               size="sm"
@@ -288,11 +323,11 @@ export default function Reports() {
           </div>
 
           {/* Printable Report Document Card */}
-          <div className="printable-area rounded-2xl bg-[#0b1629] border border-[#1d3354] p-6 sm:p-10 shadow-2xl space-y-8">
+          <div className="printable-area rounded-2xl bg-[#1C1933] border border-[#383154] p-6 sm:p-10 shadow-2xl space-y-8">
             {/* Header / Brand */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#182d4d]">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#383154]">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-white">
+                <div className="w-10 h-10 rounded-xl bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 flex items-center justify-center text-[#A78BFA]">
                   <ShieldCheck className="w-6 h-6" />
                 </div>
                 <div>
@@ -304,28 +339,28 @@ export default function Reports() {
               </div>
 
               <div className="text-left sm:text-right">
-                <span className="inline-block px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-semibold mb-1 font-mono">
+                <span className="inline-block px-3 py-1 rounded-full bg-[#8B5CF6]/10 border border-[#8B5CF6]/25 text-[#A78BFA] text-xs font-semibold mb-1 font-mono-numeric tabular-nums">
                   ID: {metadata.report_id}
                 </span>
-                <p className="text-xs text-slate-400">
-                  Generated {new Date(metadata.generated_at).toLocaleDateString("en-US", { dateStyle: "long" })}
+                <p className="text-xs text-slate-400 font-mono-numeric tabular-nums">
+                  Generated {new Date(metadata.generated_at).toLocaleDateString("en-IN", { dateStyle: "long" })}
                 </p>
               </div>
             </div>
 
             {/* Quick Metadata Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-[#081122] border border-[#142642] text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-[#0C0A1D] border border-[#383154] text-xs">
               <div>
                 <span className="text-slate-400 block mb-0.5">Model Engine</span>
-                <span className="font-semibold text-white">XGBoost-Ensemble v{metadata.model_version}</span>
+                <span className="font-semibold text-white font-mono-numeric">XGBoost-Ensemble v{metadata.model_version}</span>
               </div>
               <div>
                 <span className="text-slate-400 block mb-0.5">Underwriter Jurisdiction</span>
-                <span className="font-semibold text-white">{business.location || "United States"}</span>
+                <span className="font-semibold text-white">{business.location || "India (RBI / MSME)"}</span>
               </div>
               <div>
                 <span className="text-slate-400 block mb-0.5">Model Confidence</span>
-                <span className="font-semibold text-cyan-400">{risk_assessment.confidence}% Confident</span>
+                <span className="font-semibold text-[#A78BFA] font-mono-numeric tabular-nums">{risk_assessment.confidence}% Confident</span>
               </div>
               <div>
                 <span className="text-slate-400 block mb-0.5">Review Decision</span>
@@ -336,8 +371,8 @@ export default function Reports() {
             {/* Summary Highlights Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Business Overview */}
-              <div className="p-5 rounded-xl bg-[#081223] border border-[#162740] space-y-3">
-                <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wider">
+              <div className="p-5 rounded-xl bg-[#1C1933] border border-[#383154] space-y-3">
+                <div className="flex items-center gap-2 text-[#A78BFA] text-xs font-bold uppercase tracking-wider">
                   <Building2 className="w-4 h-4" />
                   <span>Borrower Profile</span>
                 </div>
@@ -345,68 +380,68 @@ export default function Reports() {
                   <h3 className="text-base font-bold text-white">{business.name}</h3>
                   <p className="text-xs text-slate-400 capitalize">{business.industry} Sector</p>
                 </div>
-                <div className="pt-2 border-t border-[#132338] grid grid-cols-2 gap-2 text-xs">
+                <div className="pt-2 border-t border-[#383154] grid grid-cols-2 gap-2 text-xs">
                   <div>
                     <span className="text-slate-500">Business Age:</span>
-                    <p className="font-semibold text-white">{business.age} Years</p>
+                    <p className="font-semibold text-white font-mono-numeric tabular-nums">{business.age} Years</p>
                   </div>
                   <div>
                     <span className="text-slate-500">Workforce:</span>
-                    <p className="font-semibold text-white">{business.employees} Staff</p>
+                    <p className="font-semibold text-white font-mono-numeric tabular-nums">{business.employees} Staff</p>
                   </div>
                 </div>
               </div>
 
               {/* Financial Profile */}
-              <div className="p-5 rounded-xl bg-[#081223] border border-[#162740] space-y-3">
-                <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wider">
+              <div className="p-5 rounded-xl bg-[#1C1933] border border-[#383154] space-y-3">
+                <div className="flex items-center gap-2 text-[#A78BFA] text-xs font-bold uppercase tracking-wider">
                   <DollarSign className="w-4 h-4" />
                   <span>Financial Statement</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
                     <span className="text-slate-500">Annual Revenue:</span>
-                    <p className="font-semibold text-white font-mono">${financial_summary.annual_revenue.toLocaleString()}</p>
+                    <p className="font-semibold text-white font-mono-numeric tabular-nums">₹{financial_summary.annual_revenue.toLocaleString("en-IN")}</p>
                   </div>
                   <div>
                     <span className="text-slate-500">Monthly Cash Flow:</span>
-                    <p className="font-semibold text-white font-mono">${financial_summary.monthly_cash_flow.toLocaleString()}</p>
+                    <p className="font-semibold text-white font-mono-numeric tabular-nums">₹{financial_summary.monthly_cash_flow.toLocaleString("en-IN")}</p>
                   </div>
                   <div>
                     <span className="text-slate-500">Existing Debt:</span>
-                    <p className="font-semibold text-white font-mono">${financial_summary.existing_debt.toLocaleString()}</p>
+                    <p className="font-semibold text-white font-mono-numeric tabular-nums">₹{financial_summary.existing_debt.toLocaleString("en-IN")}</p>
                   </div>
                   <div>
                     <span className="text-slate-500">Monthly Expenses:</span>
-                    <p className="font-semibold text-white font-mono">${financial_summary.monthly_expenses.toLocaleString()}</p>
+                    <p className="font-semibold text-white font-mono-numeric tabular-nums">₹{financial_summary.monthly_expenses.toLocaleString("en-IN")}</p>
                   </div>
                 </div>
               </div>
 
               {/* Risk Score Dial Card */}
-              <div className="p-5 rounded-xl bg-[#081223] border border-[#162740] flex flex-col justify-between text-center">
+              <div className="p-5 rounded-xl bg-[#1C1933] border border-[#383154] flex flex-col justify-between text-center">
                 <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
                   <span>Credit Risk Tier</span>
                   <RiskBadge riskLevel={risk_assessment.risk_level} size="sm" />
                 </div>
 
                 <div className="my-3">
-                  <div className="text-4xl font-extrabold text-white font-['Space_Grotesk']">
+                  <div className="text-4xl font-extrabold text-white font-mono-numeric tabular-nums">
                     {risk_assessment.default_probability.toFixed(1)}%
                   </div>
                   <div className="text-[11px] text-slate-400 mt-1">Default Probability Estimate</div>
                 </div>
 
-                <div className="p-2 rounded-lg bg-[#060e1c] text-xs text-slate-300 font-mono">
-                  Health Score: <b>{Math.round(100 - risk_assessment.default_probability)} / 100</b>
+                <div className="p-2 rounded-lg bg-[#0C0A1D] text-xs text-slate-300 font-mono-numeric tabular-nums border border-[#383154]">
+                  Health Score: <b className="text-white">{Math.round(100 - risk_assessment.default_probability)} / 100</b>
                 </div>
               </div>
             </div>
 
             {/* Analyst Review & Underwriter Decision Section */}
-            <div className="no-print p-6 rounded-2xl bg-[#091528] border border-cyan-500/30 space-y-5">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                <div className="flex items-center gap-2 text-cyan-400 font-semibold text-sm">
+            <div className="no-print p-6 rounded-2xl bg-[#1C1933] border border-[#8B5CF6]/25 space-y-5">
+              <div className="flex items-center justify-between border-b border-[#383154] pb-4">
+                <div className="flex items-center gap-2 text-[#A78BFA] font-semibold text-sm">
                   <UserCheck className="w-5 h-5" />
                   <span>Institutional Underwriting Review</span>
                 </div>
@@ -414,7 +449,7 @@ export default function Reports() {
               </div>
 
               {/* Status details grid visible to all users */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-xl bg-[#0C0A1D] border border-[#383154] text-xs">
                 <div>
                   <span className="text-slate-400 block mb-0.5 uppercase tracking-wider font-semibold text-[10px]">
                     Current Decision Status
@@ -425,7 +460,7 @@ export default function Reports() {
                   <span className="text-slate-400 block mb-0.5 uppercase tracking-wider font-semibold text-[10px]">
                     Reviewing Officer (Analyst UID)
                   </span>
-                  <span className="font-mono text-cyan-300 truncate block">
+                  <span className="font-mono-numeric text-[#C4B5FD] truncate block">
                     {reportData.reviewed_by || "Pending Review Assignment"}
                   </span>
                 </div>
@@ -433,14 +468,14 @@ export default function Reports() {
                   <span className="text-slate-400 block mb-0.5 uppercase tracking-wider font-semibold text-[10px]">
                     Reviewed Timestamp
                   </span>
-                  <span className="text-slate-300">
-                    {reportData.reviewed_at ? new Date(reportData.reviewed_at).toLocaleString() : "Awaiting Underwriter Evaluation"}
+                  <span className="text-slate-300 font-mono-numeric tabular-nums">
+                    {reportData.reviewed_at ? new Date(reportData.reviewed_at).toLocaleString("en-IN") : "Awaiting Underwriter Evaluation"}
                   </span>
                 </div>
               </div>
 
               {reportData.review_notes && (
-                <div className="p-4 rounded-xl bg-slate-950/40 border border-slate-800/60 text-xs text-slate-300">
+                <div className="p-4 rounded-xl bg-[#0C0A1D]/80 border border-[#383154] text-xs text-slate-300">
                   <span className="text-slate-400 block mb-1 font-semibold text-[10px] uppercase tracking-wider">
                     Underwriter Review Notes
                   </span>
@@ -450,8 +485,8 @@ export default function Reports() {
 
               {/* Analyst & Admin review controls (hidden from normal borrowers) */}
               {isAnalystOrAdmin ? (
-                <form onSubmit={handleSubmitReview} className="space-y-4 pt-2 border-t border-slate-800/80">
-                  <div className="text-xs font-semibold text-cyan-300 uppercase tracking-wider">
+                <form onSubmit={handleSubmitReview} className="space-y-4 pt-2 border-t border-[#383154]">
+                  <div className="text-xs font-semibold text-[#C4B5FD] uppercase tracking-wider">
                     Update Underwriting Decision
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -460,7 +495,7 @@ export default function Reports() {
                       <select
                         value={reviewStatusInput}
                         onChange={(e) => setReviewStatusInput(e.target.value)}
-                        className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400"
+                        className="w-full px-3.5 py-2.5 bg-[#0C0A1D] border border-[#383154] rounded-xl text-white text-sm focus:outline-none focus:border-[#8B5CF6]"
                       >
                         <option value="approved">Approved</option>
                         <option value="needs_info">Conditional / Needs Info</option>
@@ -475,7 +510,7 @@ export default function Reports() {
                         placeholder="e.g. Approved with lien condition. Cash flow coverage verified against bank records."
                         value={reviewNotesInput}
                         onChange={(e) => setReviewNotesInput(e.target.value)}
-                        className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400"
+                        className="w-full px-3.5 py-2.5 bg-[#0C0A1D] border border-[#383154] rounded-xl text-white text-sm focus:outline-none focus:border-[#8B5CF6]"
                       />
                     </div>
                   </div>
@@ -628,17 +663,20 @@ export default function Reports() {
 
           <CardContent className="p-0">
             {loading ? (
-              <div className="p-12 text-center text-slate-400">
-                <RefreshCw size={24} className="animate-spin mx-auto mb-2 text-cyan-400" />
-                Loading evaluation history...
+              <div className="p-6">
+                <TableSkeleton rows={6} columns={7} />
               </div>
             ) : filteredAssessments.length === 0 ? (
               <div className="p-8">
                 <EmptyState
-                  icon={<FileSpreadsheet className="w-7 h-7" />}
-                  title="No evaluation records found"
-                  description="No assessments matched your active search and filter criteria."
-                  actionText={assessments.length === 0 ? "New Assessment" : undefined}
+                  icon={<FileSpreadsheet className="w-7 h-7 text-[#A78BFA]" />}
+                  title={assessments.length === 0 ? "No reports available yet" : "No evaluation records found"}
+                  description={
+                    assessments.length === 0
+                      ? "No MSME risk evaluations have been performed yet. Run an assessment to generate your first audit-ready risk report."
+                      : "No assessments matched your active search and filter criteria."
+                  }
+                  actionText="New Assessment"
                   actionIcon={<Sparkles className="w-4 h-4" />}
                   onAction={() => navigate("/assessment")}
                 />
@@ -647,7 +685,7 @@ export default function Reports() {
               <div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs sm:text-sm">
-                    <thead className="bg-[#081222] border-b border-[#16273f] text-slate-400 uppercase text-[11px] tracking-wider">
+                    <thead className="bg-[#1C1933] border-b border-[#383154] text-slate-400 uppercase text-[11px] tracking-wider">
                       <tr>
                         <th className="px-6 py-3.5 font-semibold">Report Reference</th>
                         <th className="px-6 py-3.5 font-semibold">Industry</th>
@@ -658,20 +696,20 @@ export default function Reports() {
                         <th className="px-6 py-3.5 font-semibold text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#14233a]">
+                    <tbody className="divide-y divide-[#383154]">
                       {paginatedAssessments.map((item) => (
                         <tr
                           key={item.id}
-                          className="hover:bg-[#0f213a]/50 transition-colors cursor-pointer"
+                          className="hover:bg-[#252141]/60 transition-colors cursor-pointer"
                           onClick={() => navigate(`/reports?id=${item.id}`)}
                         >
                           <td className="px-6 py-4">
                             <div className="font-semibold text-white">{item.business_name}</div>
-                            <div className="text-[11px] text-slate-400 font-mono">MSME-{item.id}24</div>
+                            <div className="text-[11px] text-slate-400 font-mono-numeric tabular-nums">MSME-{item.id}24</div>
                           </td>
                           <td className="px-6 py-4 text-slate-300 capitalize">{item.industry}</td>
                           <td className="px-6 py-4">
-                            <span className="font-mono font-bold text-slate-100">
+                            <span className="font-mono-numeric tabular-nums font-bold text-slate-100">
                               {item.default_probability.toFixed(1)}%
                             </span>
                           </td>
@@ -681,8 +719,8 @@ export default function Reports() {
                           <td className="px-6 py-4">
                             {renderReviewBadge(item.review_status)}
                           </td>
-                          <td className="px-6 py-4 text-slate-400 text-xs">
-                            {new Date(item.created_at).toLocaleDateString("en-US", {
+                          <td className="px-6 py-4 text-slate-400 text-xs font-mono-numeric tabular-nums">
+                            {new Date(item.created_at).toLocaleDateString("en-IN", {
                               year: "numeric",
                               month: "short",
                               day: "numeric",
@@ -694,7 +732,7 @@ export default function Reports() {
                               size="sm"
                               icon={<FileText className="w-3.5 h-3.5" />}
                               onClick={() => navigate(`/reports?id=${item.id}`)}
-                              className="text-cyan-400 hover:text-cyan-300"
+                              className="text-[#A78BFA] hover:text-[#C4B5FD]"
                             >
                               View Report
                             </Button>
@@ -705,7 +743,7 @@ export default function Reports() {
                   </table>
                 </div>
 
-                <div className="border-t border-[#14233a] p-3">
+                <div className="border-t border-[#383154] p-3">
                   <Pagination
                     currentPage={currentPage}
                     totalPages={totalPages}

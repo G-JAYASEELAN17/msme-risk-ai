@@ -55,10 +55,15 @@ export function PortalLogin({ portal }: PortalLoginProps) {
       subtitle: "Access your business credit risk assessment.",
       badge: "MSME Business Owner",
       icon: Building2,
-      accentBorder: "focus:border-cyan-500",
-      primaryButtonClass: "bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-950/40",
+      accentBorder: "focus:border-[#8B5CF6]",
+      primaryButtonClass: "bg-[#7C3AED] hover:bg-[#6D28D9] text-white shadow-[#0C0A1D]/40",
       showGoogle: true,
       showRegisterLink: true,
+      registerPrompt: "New MSME borrower?",
+      registerAction: "Create MSME Account",
+      registerTarget: "/register?role=user",
+      registerState: { role: "user" },
+      secondaryRegisterText: null,
       allowedRole: "user",
     },
     analyst: {
@@ -69,7 +74,12 @@ export function PortalLogin({ portal }: PortalLoginProps) {
       accentBorder: "focus:border-indigo-500",
       primaryButtonClass: "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-950/40",
       showGoogle: false,
-      showRegisterLink: false,
+      showRegisterLink: true,
+      registerPrompt: "New analyst?",
+      registerAction: "Apply for an account",
+      registerTarget: "/register?role=analyst",
+      registerState: { role: "analyst" },
+      secondaryRegisterText: "Don't have an account? Register as Risk Analyst",
       allowedRole: "analyst",
     },
     admin: {
@@ -81,6 +91,11 @@ export function PortalLogin({ portal }: PortalLoginProps) {
       primaryButtonClass: "bg-purple-600 hover:bg-purple-500 text-white shadow-purple-950/40",
       showGoogle: false,
       showRegisterLink: false,
+      registerPrompt: null,
+      registerAction: null,
+      registerTarget: null,
+      registerState: null,
+      secondaryRegisterText: null,
       allowedRole: "admin",
     },
   }[portal];
@@ -126,18 +141,47 @@ export function PortalLogin({ portal }: PortalLoginProps) {
   };
 
   /**
-   * Authoritative backend role validation.
+   * Authoritative backend role and security validation.
    * Compares the user's backend role against the current login portal.
    */
   const validateRoleAndRedirect = async () => {
     try {
-      const profile = await api.getUserProfile();
+      const profile = await api.getUserProfile(true);
       const userRole = (profile.role || "user").toLowerCase();
+      const approval = profile.approval_status || "active";
 
       if (rememberMe) {
         localStorage.setItem(`msme_${portal}_email`, email.trim());
       } else {
         localStorage.removeItem(`msme_${portal}_email`);
+      }
+
+      // Check genuine email verification status
+      const currentUser = auth.currentUser;
+      const isEmailVerified = currentUser?.emailVerified || profile.email_verified;
+
+      if (!isEmailVerified) {
+        toast.warning(
+          "Email Verification Required",
+          "Please verify ownership of your email address before accessing the platform."
+        );
+        navigate("/verify-email", {
+          replace: true,
+          state: {
+            email: email.trim(),
+            message: "Email verification required. Please click the confirmation link sent to your inbox.",
+          },
+        });
+        return;
+      }
+
+      // Check suspended account status across all portals
+      if (approval === "suspended") {
+        await signOut(auth);
+        const msg = "Your account is currently unavailable. Contact the administrator for assistance.";
+        setError(msg);
+        toast.error("Account Unavailable", msg);
+        return;
       }
 
       // Handle Portal 1: MSME User Login (/login/user)
@@ -168,9 +212,30 @@ export function PortalLogin({ portal }: PortalLoginProps) {
       // Handle Portal 2: Credit Risk Analyst Login (/login/analyst)
       if (portal === "analyst") {
         if (userRole === "analyst") {
-          toast.success("Welcome back", "Signed in to Analyst Review Workspace.");
-          navigate("/analyst", { replace: true });
-          return;
+          if (approval === "pending_admin_approval") {
+            const msg = "Your analyst application is awaiting administrator approval. You will receive an update when a decision is made.";
+            setError(msg);
+            toast.warning("Approval Pending", msg);
+            navigate("/verify-email", {
+              replace: true,
+              state: { email: email.trim(), message: msg },
+            });
+            return;
+          }
+
+          if (approval === "rejected") {
+            await signOut(auth);
+            const msg = "Your analyst application was not approved. Contact the administrator if you need further information.";
+            setError(msg);
+            toast.error("Application Rejected", msg);
+            return;
+          }
+
+          if (approval === "approved" || approval === "active") {
+            toast.success("Welcome back", "Your analyst account has been approved. You can now access the Analyst Portal.");
+            navigate("/analyst", { replace: true });
+            return;
+          }
         }
 
         if (userRole === "admin") {
@@ -278,12 +343,12 @@ export function PortalLogin({ portal }: PortalLoginProps) {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col justify-between bg-[#040812] text-slate-100 relative overflow-hidden font-sans">
+    <div className="min-h-screen w-full flex flex-col justify-between bg-[#151229] text-slate-100 relative overflow-hidden font-sans">
       {/* Ambient background glows */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[300px] bg-gradient-to-b from-blue-600/10 via-cyan-500/5 to-transparent blur-3xl pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[300px] bg-gradient-to-b from-blue-600/10 via-[#8B5CF6]/5 to-transparent blur-3xl pointer-events-none" />
 
       {/* Top Navbar */}
-      <header className="relative z-10 w-full max-w-7xl mx-auto px-6 py-5 flex items-center justify-between border-b border-[#112038]">
+      <header className="relative z-10 w-full max-w-7xl mx-auto px-6 py-5 flex items-center justify-between border-b border-[#383154]">
         <Brand />
         <Link
           to="/login"
@@ -296,11 +361,11 @@ export function PortalLogin({ portal }: PortalLoginProps) {
 
       {/* Form Container */}
       <main className="relative z-10 w-full max-w-md mx-auto px-6 py-10 flex-1 flex flex-col justify-center">
-        <div className="p-8 rounded-2xl bg-[#091322]/95 backdrop-blur-md border border-[#172740] shadow-2xl space-y-6">
+        <div className="p-8 rounded-2xl bg-[#0C0A1D]/95 backdrop-blur-md border border-[#172740] shadow-2xl space-y-6">
           {/* Header */}
           <div className="space-y-2 text-center">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700/80 mx-auto">
-              <PortalIcon className="w-3.5 h-3.5 text-cyan-400" />
+              <PortalIcon className="w-3.5 h-3.5 text-[#A78BFA]" />
               <span>{portalConfig.badge}</span>
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-white font-['Space_Grotesk']">
@@ -359,7 +424,7 @@ export function PortalLogin({ portal }: PortalLoginProps) {
                 <button
                   type="button"
                   onClick={handleForgotPassword}
-                  className="text-[11px] text-cyan-400 hover:text-cyan-300 transition-colors"
+                  className="text-[11px] text-[#A78BFA] hover:text-[#C4B5FD] transition-colors"
                 >
                   Forgot password?
                 </button>
@@ -371,7 +436,7 @@ export function PortalLogin({ portal }: PortalLoginProps) {
                   placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full px-3.5 py-2.5 bg-[#060c18] border border-[#1a2d4b] rounded-xl text-slate-200 text-sm placeholder-slate-500 focus:outline-none ${portalConfig.accentBorder} transition-colors pr-10`}
+                  className={`w-full px-3.5 py-2.5 bg-[#0C0A1D] border border-[#1a2d4b] rounded-xl text-slate-200 text-sm placeholder-slate-500 focus:outline-none ${portalConfig.accentBorder} transition-colors pr-10`}
                   required
                 />
                 <button
@@ -391,7 +456,7 @@ export function PortalLogin({ portal }: PortalLoginProps) {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-cyan-500 focus:ring-0"
+                  className="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-[#8B5CF6] focus:ring-0"
                 />
                 <span>Remember email</span>
               </label>
@@ -415,7 +480,7 @@ export function PortalLogin({ portal }: PortalLoginProps) {
           {portalConfig.showGoogle && (
             <div className="space-y-3 pt-2 border-t border-slate-800">
               <div className="relative flex justify-center text-[10px] uppercase tracking-wider text-slate-500">
-                <span className="bg-[#091322] px-2 font-medium">Or continue with</span>
+                <span className="bg-[#0C0A1D] px-2 font-medium">Or continue with</span>
               </div>
 
               <button
@@ -447,14 +512,35 @@ export function PortalLogin({ portal }: PortalLoginProps) {
             </div>
           )}
 
-          {/* Registration link for MSME Users */}
+          {/* Registration links */}
           {portalConfig.showRegisterLink && (
-            <p className="text-center text-xs text-slate-400 pt-2 border-t border-slate-800">
-              New MSME borrower?{" "}
-              <Link to="/register" className="text-cyan-400 hover:text-cyan-300 font-semibold">
-                Create MSME Account
-              </Link>
-            </p>
+            <div className="text-center pt-2.5 border-t border-slate-800 space-y-1.5">
+              <p className="text-xs text-slate-400">
+                {portalConfig.registerPrompt}{" "}
+                <Link
+                  to={portalConfig.registerTarget!}
+                  state={portalConfig.registerState}
+                  className={`${
+                    portal === "analyst"
+                      ? "text-indigo-400 hover:text-indigo-300"
+                      : "text-[#A78BFA] hover:text-[#C4B5FD]"
+                  } font-semibold transition-colors`}
+                >
+                  {portalConfig.registerAction}
+                </Link>
+              </p>
+              {portalConfig.secondaryRegisterText && (
+                <p className="text-[11px] text-slate-500">
+                  <Link
+                    to={portalConfig.registerTarget!}
+                    state={portalConfig.registerState}
+                    className="text-slate-400 hover:text-slate-200 transition-colors underline underline-offset-2"
+                  >
+                    {portalConfig.secondaryRegisterText}
+                  </Link>
+                </p>
+              )}
+            </div>
           )}
 
           {/* Switch Account Type Option */}
@@ -470,7 +556,7 @@ export function PortalLogin({ portal }: PortalLoginProps) {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 w-full border-t border-[#112038] bg-[#03060f]/80 py-5 px-6 text-center text-xs text-slate-400 space-y-1">
+      <footer className="relative z-10 w-full border-t border-[#383154] bg-[#0C0A1D]/80 py-5 px-6 text-center text-xs text-slate-400 space-y-1">
         <p className="font-semibold text-slate-300 text-xs">
           AI-Assisted Credit Risk Assessment
         </p>

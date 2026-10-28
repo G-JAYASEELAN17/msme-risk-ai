@@ -26,9 +26,78 @@ class UserProfileResponse(BaseModel):
     uid: str
     email: str
     name: Optional[str] = None
+    phone: Optional[str] = None
     role: str
+    approval_status: Optional[str] = "approved"
+    email_verified: Optional[bool] = False
+    organization: Optional[str] = None
+    qualifications: Optional[str] = None
+    experience_years: Optional[str] = None
+    application_reason: Optional[str] = None
+    rejection_reason: Optional[str] = None
     settings: Dict[str, Any]
     created_at: datetime.datetime
+
+class CheckEmailRequest(BaseModel):
+    email: str
+
+class CheckEmailResponse(BaseModel):
+    exists: bool
+    message: Optional[str] = None
+
+class MSMEUserRegisterRequest(BaseModel):
+    email: str
+    password: str
+    name: str
+    phone: Optional[str] = None
+    business_name: str
+    industry: str
+    business_age: Optional[int] = 1
+    employees: Optional[int] = 1
+
+class AnalystRegisterRequest(BaseModel):
+    email: str
+    password: str
+    name: str
+    phone: Optional[str] = None
+    organization: Optional[str] = None
+    qualifications: str
+    experience_years: str
+    application_reason: str
+
+class RegisterResponse(BaseModel):
+    success: bool
+    uid: str
+    email: str
+    name: str
+    role: str
+    approval_status: str
+    requires_email_verification: bool
+    message: str
+
+class AnalystRejectRequest(BaseModel):
+    reason: str
+
+class AnalystAccessRequestItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    uid: str
+    email: str
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    organization: Optional[str] = None
+    qualifications: Optional[str] = None
+    experience_years: Optional[str] = None
+    application_reason: Optional[str] = None
+    approval_status: str
+    email_verified: bool = False
+    created_at: datetime.datetime
+    approved_by: Optional[str] = None
+    approved_at: Optional[datetime.datetime] = None
+    rejected_by: Optional[str] = None
+    rejected_at: Optional[datetime.datetime] = None
+    rejection_reason: Optional[str] = None
+    suspended_at: Optional[datetime.datetime] = None
 
 from typing import Literal
 

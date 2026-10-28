@@ -1,11 +1,12 @@
 import os
 import io
+import hashlib
 import datetime
 from pathlib import Path
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from fastapi.responses import FileResponse, RedirectResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from ..database.database import get_db
 from ..database import models
@@ -18,11 +19,14 @@ from ..schemas.documents import (
     ExtractedFieldResponse,
     FieldUpdateRequest,
     DocumentTypeUpdateRequest,
-    UseInAssessmentResponse
+    UseInAssessmentResponse,
+    AnalystReviewRequest,
+    DocumentAuditLogResponse
 )
 from ..services.audit_service import log_audit_event
 from ..services.storage_service import storage_service
 from ..services.document_service import document_service
+from ..services.verification_service import verification_engine
 
 router = APIRouter()
 
@@ -46,6 +50,37 @@ def get_confidence_level(conf: float) -> str:
     elif conf >= 0.70:
         return "Medium"
     return "Low"
+
+def to_document_response(doc: models.Document, download_url: Optional[str] = None) -> DocumentResponse:
+    bus_name = doc.business.name if doc.business else None
+    field_count = len(doc.fields) if doc.fields else 0
+    verified_count = sum(1 for f in doc.fields if f.is_verified) if doc.fields else 0
+
+    return DocumentResponse(
+        id=doc.id,
+        business_id=doc.business_id,
+        business_name=bus_name,
+        filename=doc.filename,
+        original_filename=doc.original_filename,
+        file_size=doc.file_size,
+        mime_type=doc.mime_type,
+        status=doc.status,
+        document_type=doc.document_type or "OTHER",
+        processing_status=doc.processing_status or "UPLOADED",
+        error_message=doc.error_message,
+        extracted_data=doc.extracted_data or {},
+        file_hash=doc.file_hash,
+        verification_report=doc.verification_report or {},
+        analyst_decision=doc.analyst_decision,
+        analyst_notes=doc.analyst_notes,
+        reviewed_by=doc.reviewed_by,
+        reviewed_at=doc.reviewed_at,
+        created_at=doc.created_at,
+        updated_at=doc.updated_at,
+        download_url=download_url,
+        field_count=field_count,
+        verified_count=verified_count
+    )
 
 def get_authorized_document(
     doc_id: int,
@@ -94,42 +129,21 @@ async def list_documents(
     Lists all uploaded financial documents for the authenticated user with isolated ownership.
     Analysts/admins may query tenant documents.
     """
+    query = db.query(models.Document).options(
+        joinedload(models.Document.business),
+        selectinload(models.Document.fields)
+    )
     if getattr(current_user, "role", "user") in ["analyst", "admin"]:
-        docs = db.query(models.Document).order_by(models.Document.created_at.desc()).all()
+        docs = query.order_by(models.Document.created_at.desc()).all()
     else:
-        docs = db.query(models.Document).filter(
+        docs = query.filter(
             models.Document.user_id == current_user.uid
         ).order_by(models.Document.created_at.desc()).all()
 
-    results = []
-    for d in docs:
-        bus_name = d.business.name if d.business else None
-        download_url = await storage_service.get_download_url(d.user_id, d.file_path)
-        if not download_url:
-            download_url = f"/api/documents/{d.id}/download"
-
-        field_count = len(d.fields) if d.fields else 0
-        verified_count = sum(1 for f in d.fields if f.is_verified) if d.fields else 0
-
-        results.append(DocumentResponse(
-            id=d.id,
-            business_id=d.business_id,
-            business_name=bus_name,
-            filename=d.filename,
-            original_filename=d.original_filename,
-            file_size=d.file_size,
-            mime_type=d.mime_type,
-            status=d.status,
-            document_type=d.document_type or "OTHER",
-            processing_status=d.processing_status or "UPLOADED",
-            error_message=d.error_message,
-            extracted_data=d.extracted_data or {},
-            created_at=d.created_at,
-            updated_at=d.updated_at,
-            download_url=download_url,
-            field_count=field_count,
-            verified_count=verified_count
-        ))
+    results = [
+        to_document_response(d, f"/api/documents/{d.id}/download")
+        for d in docs
+    ]
     return results
 
 
@@ -197,6 +211,8 @@ async def upload_document(
         mime_type=mime_type
     )
 
+    # Calculate SHA-256 file hash for duplicate detection and integrity tracking
+    file_hash = hashlib.sha256(contents).hexdigest()
     doc_type_initial = (document_type or "OTHER").upper()
 
     doc = models.Document(
@@ -207,6 +223,7 @@ async def upload_document(
         file_size=file_size,
         mime_type=mime_type,
         file_path=storage_path,
+        file_hash=file_hash,
         status="uploaded",
         document_type=doc_type_initial,
         processing_status="PROCESSING",
@@ -225,11 +242,12 @@ async def upload_document(
         details={
             "filename": orig_name,
             "size": file_size,
+            "file_hash": file_hash,
             "storage": "supabase" if storage_service.is_supabase_enabled else "local"
         }
     )
 
-    # Run extraction pipeline
+    # Run extraction & verification pipeline
     doc = document_service.process_document(
         document_id=doc.id,
         user_id=current_user.uid,
@@ -237,33 +255,134 @@ async def upload_document(
         file_bytes=contents
     )
 
-    bus_name = doc.business.name if doc.business else None
     download_url = await storage_service.get_download_url(current_user.uid, storage_path)
     if not download_url:
         download_url = f"/api/documents/{doc.id}/download"
 
-    field_count = len(doc.fields) if doc.fields else 0
-    verified_count = sum(1 for f in doc.fields if f.is_verified) if doc.fields else 0
+    return to_document_response(doc, download_url)
 
-    return DocumentResponse(
-        id=doc.id,
-        business_id=doc.business_id,
-        business_name=bus_name,
-        filename=doc.filename,
-        original_filename=doc.original_filename,
-        file_size=doc.file_size,
-        mime_type=doc.mime_type,
-        status=doc.status,
-        document_type=doc.document_type,
-        processing_status=doc.processing_status,
-        error_message=doc.error_message,
-        extracted_data=doc.extracted_data or {},
-        created_at=doc.created_at,
-        updated_at=doc.updated_at,
-        download_url=download_url,
-        field_count=field_count,
-        verified_count=verified_count
+
+from pydantic import BaseModel
+
+class ExemptionApplyRequest(BaseModel):
+    category: str
+    reason: str
+    business_id: Optional[int] = None
+
+from ..services.checklist_service import checklist_service
+
+@router.get("/checklist")
+def get_document_checklist(
+    business_id: Optional[int] = None,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Returns the comprehensive checklist status across all 5 required document categories
+    and optional supporting categories, including completion percentage and submission blockers.
+    """
+    return checklist_service.get_document_checklist(
+        user_id=current_user.uid,
+        business_id=business_id,
+        db=db
     )
+
+@router.post("/exemptions")
+def apply_category_exemption(
+    payload: ExemptionApplyRequest,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Records an explicit, auditable exemption for an eligible category (e.g., GST or Financial Statements).
+    """
+    try:
+        exemption = checklist_service.apply_exemption(
+            user_id=current_user.uid,
+            business_id=payload.business_id,
+            category=payload.category,
+            reason=payload.reason,
+            db=db
+        )
+        log_audit_event(
+            db=db,
+            user_id=current_user.uid,
+            action="DOCUMENT_EXEMPTION_APPLIED",
+            resource_type="document_exemption",
+            resource_id=str(exemption.id),
+            details={"category": payload.category, "reason": payload.reason}
+        )
+        return {
+            "status": "success",
+            "message": f"Statutory exemption recorded for category '{payload.category}'.",
+            "exemption": {
+                "id": exemption.id,
+                "category": exemption.category,
+                "reason": exemption.reason,
+                "status": exemption.status,
+                "created_at": exemption.created_at.isoformat()
+            }
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+@router.delete("/exemptions/{category}")
+def remove_category_exemption(
+    category: str,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Revokes a previously requested exemption, restoring mandatory document submission.
+    """
+    success = checklist_service.remove_exemption(
+        user_id=current_user.uid,
+        category=category,
+        db=db
+    )
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No active exemption found for category '{category}'.")
+    log_audit_event(
+        db=db,
+        user_id=current_user.uid,
+        action="DOCUMENT_EXEMPTION_REVOKED",
+        resource_type="document_exemption",
+        resource_id=category,
+        details={"category": category}
+    )
+    return {"status": "success", "message": f"Exemption for '{category}' revoked."}
+
+@router.post("/validate-submission")
+def validate_submission_readiness(
+    business_id: Optional[int] = None,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Revalidates document checklist requirements on the backend.
+    Enforces that an assessment cannot be submitted until all required categories are satisfied.
+    """
+    data = checklist_service.get_document_checklist(
+        user_id=current_user.uid,
+        business_id=business_id,
+        db=db
+    )
+    if not data["can_submit_assessment"]:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "message": "Incomplete documentation. All required document categories must be satisfied before final assessment submission.",
+                "satisfied_count": data["satisfied_categories_count"],
+                "total_required": data["required_categories_total"],
+                "blocking_reasons": data["blocking_reasons"]
+            }
+        )
+    return {
+        "status": "ready",
+        "can_submit_assessment": True,
+        "progress_label": data["progress_label"],
+        "satisfied_categories_count": data["satisfied_categories_count"]
+    }
 
 
 @router.get("/{id}", response_model=DocumentResponse)
@@ -274,33 +393,11 @@ async def get_document(
 ):
     """Retrieves document metadata by ID."""
     doc = get_authorized_document(id, current_user, db, require_write=False)
-    bus_name = doc.business.name if doc.business else None
     download_url = await storage_service.get_download_url(doc.user_id, doc.file_path)
     if not download_url:
         download_url = f"/api/documents/{doc.id}/download"
 
-    field_count = len(doc.fields) if doc.fields else 0
-    verified_count = sum(1 for f in doc.fields if f.is_verified) if doc.fields else 0
-
-    return DocumentResponse(
-        id=doc.id,
-        business_id=doc.business_id,
-        business_name=bus_name,
-        filename=doc.filename,
-        original_filename=doc.original_filename,
-        file_size=doc.file_size,
-        mime_type=doc.mime_type,
-        status=doc.status,
-        document_type=doc.document_type or "OTHER",
-        processing_status=doc.processing_status or "UPLOADED",
-        error_message=doc.error_message,
-        extracted_data=doc.extracted_data or {},
-        created_at=doc.created_at,
-        updated_at=doc.updated_at,
-        download_url=download_url,
-        field_count=field_count,
-        verified_count=verified_count
-    )
+    return to_document_response(doc, download_url)
 
 
 @router.get("/{id}/status", response_model=DocumentStatusResponse)
@@ -615,3 +712,114 @@ async def delete_document(
     )
 
     return None
+
+
+@router.get("/{id}/verification", response_model=Dict[str, Any])
+def get_document_verification(
+    id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieves full verification report including SHA-256 duplicate status,
+    arithmetic consistency checks, cross-document discrepancies, assessment comparisons,
+    risk indicators, and independent external verification lookup.
+    """
+    doc = get_authorized_document(id, current_user, db, require_write=False)
+    report = doc.verification_report
+    if not report or not isinstance(report, dict) or not report.get("overall_status"):
+        report_obj = verification_engine.run_verification(doc, db)
+        report = report_obj.dict()
+    return report
+
+
+@router.post("/{id}/verify-engine", response_model=DocumentResponse)
+def trigger_verification_engine(
+    id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Re-runs full verification engine (checks duplicates, arithmetic, cross-doc consistency).
+    """
+    doc = get_authorized_document(id, current_user, db, require_write=True)
+    report_obj = verification_engine.run_verification(doc, db)
+    doc.processing_status = report_obj.overall_status
+    db.commit()
+    db.refresh(doc)
+    return to_document_response(doc, None)
+
+
+@router.post("/{id}/analyst-review", response_model=DocumentResponse)
+def submit_analyst_review_endpoint(
+    id: int,
+    payload: AnalystReviewRequest,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Submits human risk analyst underwriter decision.
+    Only accessible by authorized ANALYST or ADMIN roles.
+    Supported decisions: APPROVED, REJECTED, INVESTIGATION_REQUIRED, NEEDS_DOCUMENTS.
+    """
+    if getattr(current_user, "role", "user") not in ["analyst", "admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only credit risk analysts and administrators can record document review decisions."
+        )
+    get_authorized_document(id, current_user, db, require_write=False)
+    doc = document_service.submit_analyst_review(
+        document_id=id,
+        analyst_user=current_user,
+        decision=payload.decision,
+        notes=payload.notes,
+        db=db
+    )
+    return to_document_response(doc, None)
+
+
+@router.post("/{id}/retry", response_model=DocumentResponse)
+def retry_document_processing(
+    id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Retries complete extraction and verification pipeline without leaving record stuck in Processing.
+    """
+    doc = get_authorized_document(id, current_user, db, require_write=True)
+    doc = document_service.retry_verification(
+        document_id=doc.id,
+        user_id=doc.user_id,
+        db=db
+    )
+    return to_document_response(doc, None)
+
+
+@router.get("/{id}/audit-trail", response_model=List[DocumentAuditLogResponse])
+def get_document_audit_trail(
+    id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieves full audit log for the document (upload, extractions, field corrections, analyst reviews).
+    """
+    doc = get_authorized_document(id, current_user, db, require_write=False)
+    logs = db.query(models.AuditLog).filter(
+        models.AuditLog.resource_type == "document",
+        models.AuditLog.resource_id == str(doc.id)
+    ).order_by(models.AuditLog.created_at.desc()).all()
+
+    return [
+        DocumentAuditLogResponse(
+            id=log.id,
+            action=log.action,
+            user_id=log.user_id,
+            details=log.details or {},
+            created_at=log.created_at
+        )
+        for log in logs
+    ]
+
+

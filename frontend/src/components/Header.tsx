@@ -18,17 +18,17 @@ export default function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-[#060b14]/90 backdrop-blur-md border-b border-[#14233a]">
+    <header className="sticky top-0 z-40 w-full bg-[#0C0A1D]/90 backdrop-blur-md border-b border-[#383154]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         <Brand />
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-300">
+        <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-[#B7B1D1]">
           {navLinks.map((item) => (
             <Link
               key={item.label}
               to={item.href}
-              className="hover:text-cyan-400 transition-colors"
+              className="hover:text-[#A78BFA] transition-colors"
             >
               {item.label}
             </Link>
@@ -41,7 +41,7 @@ export default function Header() {
             variant="ghost"
             size="sm"
             onClick={() => navigate("/login")}
-            className="text-slate-200"
+            className="text-[#F5F3FF]"
           >
             Sign in
           </Button>
@@ -59,7 +59,7 @@ export default function Header() {
 
         {/* Mobile menu toggle */}
         <button
-          className="md:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 focus:outline-none"
+          className="md:hidden p-2 rounded-xl text-[#B7B1D1] hover:text-[#F5F3FF] hover:bg-[#252141] focus:outline-none"
           onClick={() => setOpen(!open)}
           aria-label="Toggle navigation menu"
         >
@@ -69,21 +69,21 @@ export default function Header() {
 
       {/* Mobile Drawer */}
       {open && (
-        <div className="md:hidden bg-[#0a1424] border-b border-[#182c47] p-6 space-y-4 animate-in slide-in-from-top-4 duration-200">
-          <div className="flex flex-col gap-3 text-sm font-medium text-slate-300">
+        <div className="md:hidden bg-[#1C1933] border-b border-[#383154] p-6 space-y-4 animate-in slide-in-from-top-4 duration-200">
+          <div className="flex flex-col gap-3 text-sm font-medium text-[#B7B1D1]">
             {navLinks.map((item) => (
               <Link
                 key={item.label}
                 to={item.href}
                 onClick={() => setOpen(false)}
-                className="py-2 hover:text-cyan-400"
+                className="py-2 hover:text-[#A78BFA]"
               >
                 {item.label}
               </Link>
             ))}
           </div>
 
-          <div className="pt-4 border-t border-[#16273f] flex flex-col gap-3">
+          <div className="pt-4 border-t border-[#383154] flex flex-col gap-3">
             <Button
               variant="outline"
               size="md"

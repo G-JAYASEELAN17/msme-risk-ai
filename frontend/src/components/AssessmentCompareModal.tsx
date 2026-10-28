@@ -65,10 +65,10 @@ export default function AssessmentCompareModal({
         aria-hidden="true"
       />
 
-      <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#0b1629] border border-[#203a60] p-6 sm:p-8 shadow-2xl shadow-black/90 z-10 animate-in zoom-in-95 duration-150">
-        <div className="flex items-center justify-between pb-4 border-b border-[#182d4d] mb-6">
+      <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#1C1933] border border-[#203a60] p-6 sm:p-8 shadow-2xl shadow-black/90 z-10 animate-in zoom-in-95 duration-150">
+        <div className="flex items-center justify-between pb-4 border-b border-[#383154] mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-[#8B5CF6]/10 border border-[#8B5CF6]/20 text-[#A78BFA] flex items-center justify-center">
               <Scale className="w-5 h-5" />
             </div>
             <div>
@@ -93,14 +93,14 @@ export default function AssessmentCompareModal({
 
         {/* Selection Dropdowns */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          <div className="p-3.5 rounded-xl bg-[#091322] border border-[#16273f]">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-cyan-400 block mb-1.5">
+          <div className="p-3.5 rounded-xl bg-[#0C0A1D] border border-[#383154]">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-[#A78BFA] block mb-1.5">
               Baseline Assessment (A)
             </label>
             <select
               value={selectedId1}
               onChange={(e) => setSelectedId1(Number(e.target.value))}
-              className="w-full bg-[#0d1c33] border border-[#1d3559] text-slate-100 text-xs rounded-lg p-2.5 focus:outline-none"
+              className="w-full bg-[#1C1933] border border-[#1d3559] text-slate-100 text-xs rounded-lg p-2.5 focus:outline-none"
             >
               {assessments.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -110,14 +110,14 @@ export default function AssessmentCompareModal({
             </select>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-[#091322] border border-[#16273f]">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-cyan-400 block mb-1.5">
+          <div className="p-3.5 rounded-xl bg-[#0C0A1D] border border-[#383154]">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-[#A78BFA] block mb-1.5">
               Target Assessment (B)
             </label>
             <select
               value={selectedId2}
               onChange={(e) => setSelectedId2(Number(e.target.value))}
-              className="w-full bg-[#0d1c33] border border-[#1d3559] text-slate-100 text-xs rounded-lg p-2.5 focus:outline-none"
+              className="w-full bg-[#1C1933] border border-[#1d3559] text-slate-100 text-xs rounded-lg p-2.5 focus:outline-none"
             >
               {assessments.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -144,7 +144,7 @@ export default function AssessmentCompareModal({
         {compareData && (
           <div className="space-y-6">
             {/* Deltas & Summary Callout */}
-            <div className="p-4 rounded-xl bg-[#081122] border border-[#16273f]">
+            <div className="p-4 rounded-xl bg-[#0C0A1D] border border-[#383154]">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-[#14233a] mb-3">
                 <div>
                   <span className="text-xs font-bold text-white uppercase tracking-wider">
@@ -176,7 +176,7 @@ export default function AssessmentCompareModal({
               <div className="space-y-1.5 pt-1">
                 {compareData.comparison_summary.map((s, i) => (
                   <p key={i} className="text-xs text-slate-300 flex items-start gap-2">
-                    <span className="text-cyan-400 font-bold">•</span>
+                    <span className="text-[#A78BFA] font-bold">•</span>
                     <span>{s}</span>
                   </p>
                 ))}
@@ -186,7 +186,7 @@ export default function AssessmentCompareModal({
             {/* Side by side comparison table */}
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
-                <thead className="bg-[#081222] text-slate-400 uppercase text-[10px] tracking-wider border-b border-[#14233a]">
+                <thead className="bg-[#0C0A1D] text-slate-400 uppercase text-[10px] tracking-wider border-b border-[#14233a]">
                   <tr>
                     <th className="p-3">Indicator</th>
                     <th className="p-3">Baseline (MSME-{compareData.assessment_1.id}24)</th>
@@ -265,7 +265,7 @@ export default function AssessmentCompareModal({
           </div>
         )}
 
-        <div className="pt-6 border-t border-[#182d4d] mt-6 flex justify-end">
+        <div className="pt-6 border-t border-[#383154] mt-6 flex justify-end">
           <Button variant="outline" size="sm" onClick={onClose}>
             Close Comparison
           </Button>

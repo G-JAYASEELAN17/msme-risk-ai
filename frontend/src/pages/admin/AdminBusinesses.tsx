@@ -100,7 +100,7 @@ export default function AdminBusinesses() {
   }, [businesses, industryFilter, searchQuery]);
 
   return (
-    <div className="flex min-h-screen bg-[#030712] text-slate-100">
+    <div className="flex min-h-screen bg-[#0C0A1D] text-slate-100">
       <Sidebar active="MSME Businesses" />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
@@ -115,7 +115,7 @@ export default function AdminBusinesses() {
 
         <main className="p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
           {/* Controls Bar: Search & Industry Filter */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b]">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 rounded-2xl bg-[#0C0A1D] border border-[#383154]">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
@@ -123,7 +123,7 @@ export default function AdminBusinesses() {
                 placeholder="Search by business name, industry, location..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#0d1c33] border border-[#1d3559] text-sm text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500 transition"
+                className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#1C1933] border border-[#1d3559] text-sm text-white placeholder-slate-400 focus:outline-none focus:border-[#8B5CF6] transition"
               />
               {searchQuery && (
                 <button
@@ -141,7 +141,7 @@ export default function AdminBusinesses() {
                 <select
                   value={industryFilter}
                   onChange={(e) => setIndustryFilter(e.target.value)}
-                  className="px-3 py-2 rounded-xl bg-[#0d1c33] border border-[#1d3559] text-xs font-semibold text-slate-200 focus:outline-none focus:border-cyan-500"
+                  className="px-3 py-2 rounded-xl bg-[#1C1933] border border-[#1d3559] text-xs font-semibold text-slate-200 focus:outline-none focus:border-[#8B5CF6]"
                 >
                   <option value="all">All Industries ({businesses.length})</option>
                   {industries.map((ind) => (
@@ -154,7 +154,7 @@ export default function AdminBusinesses() {
 
               <button
                 onClick={loadBusinesses}
-                className="p-2 rounded-xl bg-[#0d1c33] border border-[#1d3559] text-slate-300 hover:text-white hover:bg-slate-800 transition shrink-0"
+                className="p-2 rounded-xl bg-[#1C1933] border border-[#1d3559] text-slate-300 hover:text-white hover:bg-slate-800 transition shrink-0"
                 title="Refresh business list"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -185,10 +185,10 @@ export default function AdminBusinesses() {
               }}
             />
           ) : (
-            <div className="rounded-2xl bg-[#081120] border border-[#1a2d4b] overflow-hidden shadow-xl">
+            <div className="rounded-2xl bg-[#0C0A1D] border border-[#383154] overflow-hidden shadow-xl">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm text-slate-300">
-                  <thead className="bg-[#0c182b] text-[11px] uppercase tracking-wider text-slate-400 border-b border-[#1a2d4b]">
+                  <thead className="bg-[#1C1933] text-[11px] uppercase tracking-wider text-slate-400 border-b border-[#383154]">
                     <tr>
                       <th className="py-3 px-4">Business Name</th>
                       <th className="py-3 px-4">Industry</th>
@@ -199,7 +199,7 @@ export default function AdminBusinesses() {
                       <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#162742]">
+                  <tbody className="divide-y divide-[#383154]">
                     {filteredBusinesses.map((b) => (
                       <tr
                         key={b.id}
@@ -208,11 +208,11 @@ export default function AdminBusinesses() {
                       >
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center font-bold text-xs shrink-0">
+                            <div className="w-8 h-8 rounded-lg bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 text-[#A78BFA] flex items-center justify-center font-bold text-xs shrink-0">
                               {(b.name || "B").slice(0, 2).toUpperCase()}
                             </div>
                             <div>
-                              <div className="font-semibold text-white truncate hover:text-cyan-300 transition">
+                              <div className="font-semibold text-white truncate hover:text-[#C4B5FD] transition">
                                 {b.name}
                               </div>
                               <div className="text-[11px] text-slate-400">ID #{b.id}</div>
@@ -251,7 +251,7 @@ export default function AdminBusinesses() {
                               e.stopPropagation();
                               handleInspectBusiness(b.id);
                             }}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-[#0d1c33] text-cyan-300 hover:text-white hover:bg-cyan-600/30 border border-[#1d3559] transition"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-[#1C1933] text-[#C4B5FD] hover:text-white hover:bg-[#8B5CF6]/30 border border-[#1d3559] transition"
                           >
                             <Eye className="w-3.5 h-3.5" />
                             <span>Inspect</span>
@@ -264,7 +264,7 @@ export default function AdminBusinesses() {
               </div>
 
               {/* Table Footer */}
-              <div className="p-3.5 bg-[#0c182b] border-t border-[#1a2d4b] text-xs text-slate-400 flex items-center justify-between">
+              <div className="p-3.5 bg-[#1C1933] border-t border-[#383154] text-xs text-slate-400 flex items-center justify-between">
                 <span>Showing {filteredBusinesses.length} of {businesses.length} MSMEs</span>
                 <span className="text-slate-400">Click any business to inspect portfolio telemetry</span>
               </div>
@@ -274,10 +274,10 @@ export default function AdminBusinesses() {
           {/* Business Inspection Drawer / Modal */}
           {selectedId !== null && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-              <div className="relative w-full max-w-3xl bg-[#081120] border border-[#1e3458] rounded-2xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
-                <div className="flex items-center justify-between pb-4 border-b border-[#1a2d4b] sticky top-0 bg-[#081120] z-10">
+              <div className="relative w-full max-w-3xl bg-[#0C0A1D] border border-[#383154] rounded-2xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
+                <div className="flex items-center justify-between pb-4 border-b border-[#383154] sticky top-0 bg-[#0C0A1D] z-10">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center font-bold text-sm">
+                    <div className="w-10 h-10 rounded-xl bg-[#8B5CF6]/20 text-[#A78BFA] border border-[#8B5CF6]/30 flex items-center justify-center font-bold text-sm">
                       <Building2 className="w-5 h-5" />
                     </div>
                     <div>
@@ -307,7 +307,7 @@ export default function AdminBusinesses() {
                 ) : businessDetail ? (
                   <div className="mt-5 space-y-6">
                     {/* General Information Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl bg-[#0c182b] border border-[#1a2d4b] text-xs">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl bg-[#1C1933] border border-[#383154] text-xs">
                       <div>
                         <span className="text-slate-400 block mb-0.5">Industry Sector</span>
                         <strong className="text-white text-sm">{businessDetail.industry || "—"}</strong>
@@ -340,11 +340,11 @@ export default function AdminBusinesses() {
                       </div>
 
                       {(!businessDetail.assessments || businessDetail.assessments.length === 0) ? (
-                        <div className="p-4 rounded-xl bg-[#0d1c33] border border-[#1a2d4b] text-xs text-slate-400 text-center">
+                        <div className="p-4 rounded-xl bg-[#1C1933] border border-[#383154] text-xs text-slate-400 text-center">
                           No assessment runs have been recorded for this MSME yet.
                         </div>
                       ) : (
-                        <div className="divide-y divide-slate-800 border border-[#1a2d4b] rounded-xl overflow-hidden bg-[#0a1526]">
+                        <div className="divide-y divide-slate-800 border border-[#383154] rounded-xl overflow-hidden bg-[#0C0A1D]">
                           {businessDetail.assessments.map((a: any) => (
                             <div key={a.id} className="p-3 text-xs flex items-center justify-between">
                               <div>
@@ -376,21 +376,21 @@ export default function AdminBusinesses() {
                     <div>
                       <div className="flex items-center justify-between mb-2.5">
                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                          <FileText className="w-4 h-4 text-cyan-400" />
+                          <FileText className="w-4 h-4 text-[#A78BFA]" />
                           Financial Documents ({businessDetail.documents?.length || 0})
                         </h4>
                       </div>
 
                       {(!businessDetail.documents || businessDetail.documents.length === 0) ? (
-                        <div className="p-4 rounded-xl bg-[#0d1c33] border border-[#1a2d4b] text-xs text-slate-400 text-center">
+                        <div className="p-4 rounded-xl bg-[#1C1933] border border-[#383154] text-xs text-slate-400 text-center">
                           No documents uploaded for this business.
                         </div>
                       ) : (
-                        <div className="divide-y divide-slate-800 border border-[#1a2d4b] rounded-xl overflow-hidden bg-[#0a1526]">
+                        <div className="divide-y divide-slate-800 border border-[#383154] rounded-xl overflow-hidden bg-[#0C0A1D]">
                           {businessDetail.documents.map((d: any) => (
                             <div key={d.id} className="p-3 text-xs flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <FileText className="w-4 h-4 text-cyan-400" />
+                                <FileText className="w-4 h-4 text-[#A78BFA]" />
                                 <div>
                                   <span className="font-semibold text-white truncate max-w-xs block">
                                     {d.original_filename || d.filename}
@@ -411,7 +411,7 @@ export default function AdminBusinesses() {
                   </div>
                 ) : null}
 
-                <div className="mt-6 pt-4 border-t border-[#1a2d4b] flex justify-end">
+                <div className="mt-6 pt-4 border-t border-[#383154] flex justify-end">
                   <button
                     onClick={() => {
                       setSelectedId(null);

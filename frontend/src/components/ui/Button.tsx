@@ -27,27 +27,27 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles =
-    "inline-flex items-center justify-center font-medium transition-all duration-200 rounded-lg select-none disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#060b14]";
+    "inline-flex items-center justify-center font-medium transition-all duration-150 rounded-xl select-none disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0C0A1D]";
 
   const variantStyles = {
     primary:
-      "bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white shadow-lg shadow-blue-500/20 hover:shadow-cyan-500/25 active:scale-[0.98] focus-visible:ring-cyan-400",
+      "bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-semibold shadow-md shadow-[#8B5CF6]/20 active:scale-[0.98] focus-visible:ring-[#A78BFA]",
     secondary:
-      "bg-[#13233a] hover:bg-[#1a304e] text-slate-100 border border-[#233854] hover:border-[#35527a] active:scale-[0.98] focus-visible:ring-slate-400",
+      "bg-[#252141] hover:bg-[#30294D] text-[#F5F3FF] border border-[#383154] hover:border-[#8B5CF6]/40 active:scale-[0.98] focus-visible:ring-[#A78BFA]",
     outline:
-      "bg-transparent hover:bg-slate-800/40 text-slate-200 border border-[#273d5d] hover:border-[#38bdf8] hover:text-white active:scale-[0.98] focus-visible:ring-cyan-400",
+      "bg-transparent hover:bg-[#252141] text-[#F5F3FF] border border-[#383154] hover:border-[#8B5CF6]/50 hover:text-white active:scale-[0.98] focus-visible:ring-[#A78BFA]",
     ghost:
-      "bg-transparent hover:bg-slate-800/50 text-slate-300 hover:text-white focus-visible:ring-slate-400",
+      "bg-transparent hover:bg-[#252141] text-[#B7B1D1] hover:text-[#F5F3FF] focus-visible:ring-[#A78BFA]",
     danger:
-      "bg-red-600/90 hover:bg-red-500 text-white shadow-lg shadow-red-500/20 active:scale-[0.98] focus-visible:ring-red-400",
+      "bg-[#F87171] hover:bg-rose-600 text-white font-medium shadow-sm active:scale-[0.98] focus-visible:ring-rose-400",
     success:
-      "bg-emerald-600/90 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 active:scale-[0.98] focus-visible:ring-emerald-400",
+      "bg-[#22C55E] hover:bg-emerald-600 text-white font-medium shadow-sm active:scale-[0.98] focus-visible:ring-emerald-400",
   };
 
   const sizeStyles = {
-    sm: "text-xs px-3 py-1.5 gap-1.5",
-    md: "text-sm px-4 py-2.5 gap-2",
-    lg: "text-base px-6 py-3 gap-2.5 font-semibold",
+    sm: "text-xs px-3 py-1.5 gap-1.5 rounded-lg",
+    md: "text-xs sm:text-sm px-4 py-2 gap-2 rounded-xl",
+    lg: "text-sm sm:text-base px-5 py-2.5 gap-2.5 rounded-xl font-medium",
   };
 
   const effectiveLeftIcon = leftIcon || (iconPosition === "left" ? icon : null);
@@ -61,7 +61,7 @@ export const Button: React.FC<ButtonProps> = ({
     >
       {loading ? (
         <>
-          <Loader2 className="w-4 h-4 animate-spin text-current" />
+          <Loader2 className="w-4 h-4 animate-spin text-current shrink-0" />
           <span>{loadingText || children}</span>
         </>
       ) : (

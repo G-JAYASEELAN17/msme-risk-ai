@@ -8,7 +8,7 @@ export default function ResponsibleAiPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-[#060b14] text-slate-100 flex flex-col selection:bg-cyan-500/20">
+    <div className="min-h-screen bg-[#0C0A1D] text-slate-100 flex flex-col selection:bg-[#8B5CF6]/20">
       <SEO
         title="Responsible AI & Governance | MSME Risk AI"
         description="Our ethical principles, transparency commitments, model limitations, and human-in-the-loop safeguards in AI-assisted credit risk assessment."
@@ -19,7 +19,7 @@ export default function ResponsibleAiPage() {
       <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Breadcrumb / Badge */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-800 text-cyan-300 text-xs font-semibold mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#8B5CF6]/15 border border-[#383154] text-[#C4B5FD] text-xs font-semibold mb-4">
             <Scale className="w-4 h-4" /> AI Ethics & Algorithmic Governance
           </div>
           <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
@@ -31,15 +31,15 @@ export default function ResponsibleAiPage() {
         </div>
 
         {/* Mandatory Core Declaration Banner */}
-        <div className="p-6 sm:p-8 rounded-2xl bg-cyan-950/30 border border-cyan-500/40 text-cyan-100 mb-12 shadow-lg shadow-cyan-950/20">
+        <div className="p-6 sm:p-8 rounded-2xl bg-[#8B5CF6]/15 border border-[#8B5CF6]/40 text-[#F5F3FF] mb-12 shadow-lg shadow-[#0C0A1D]/20">
           <div className="flex items-start gap-4">
-            <ShieldCheck className="w-8 h-8 text-cyan-400 shrink-0 mt-1" />
+            <ShieldCheck className="w-8 h-8 text-[#A78BFA] shrink-0 mt-1" />
             <div>
               <h2 className="text-lg font-bold text-white mb-2">Fundamental System Charter</h2>
-              <p className="text-base sm:text-lg font-medium text-cyan-200 leading-relaxed italic border-l-4 border-cyan-400 pl-4 py-1 my-3 bg-cyan-950/40 rounded-r-lg">
+              <p className="text-base sm:text-lg font-medium text-[#DDD6FE] leading-relaxed italic border-l-4 border-[#8B5CF6] pl-4 py-1 my-3 bg-[#8B5CF6]/10 rounded-r-lg">
                 "This system provides AI-assisted credit risk decision support and does not autonomously approve or reject loans."
               </p>
-              <p className="text-xs sm:text-sm text-cyan-300/80 mt-2">
+              <p className="text-xs sm:text-sm text-[#C4B5FD]/80 mt-2">
                 Every credit decision requires review and sign-off by a qualified credit analyst. Algorithmic outputs serve solely as supplementary analytical insights to enhance diligence and consistency.
               </p>
             </div>
@@ -49,7 +49,7 @@ export default function ResponsibleAiPage() {
         {/* Key Governance Pillars */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
           {/* 1. Human-in-the-Loop */}
-          <div className="p-6 rounded-2xl bg-[#091426] border border-[#182c47]">
+          <div className="p-6 rounded-2xl bg-[#1C1933] border border-[#383154]">
             <Users className="w-8 h-8 text-emerald-400 mb-4" />
             <h3 className="text-lg font-bold text-white mb-2">1. Human-in-the-Loop Analyst Review</h3>
             <p className="text-sm text-slate-300 leading-relaxed mb-3">
@@ -63,8 +63,8 @@ export default function ResponsibleAiPage() {
           </div>
 
           {/* 2. Explainability & SHAP */}
-          <div className="p-6 rounded-2xl bg-[#091426] border border-[#182c47]">
-            <BrainCircuit className="w-8 h-8 text-cyan-400 mb-4" />
+          <div className="p-6 rounded-2xl bg-[#1C1933] border border-[#383154]">
+            <BrainCircuit className="w-8 h-8 text-[#A78BFA] mb-4" />
             <h3 className="text-lg font-bold text-white mb-2">2. Explainable Factor Attribution</h3>
             <p className="text-sm text-slate-300 leading-relaxed mb-3">
               We prohibit opaque black-box scoring. Every prediction generates additive Shapley values (SHAP) that quantify exactly how each financial variable influenced the final risk score.
@@ -77,7 +77,7 @@ export default function ResponsibleAiPage() {
           </div>
 
           {/* 3. Hypothetical What-If Scenarios */}
-          <div className="p-6 rounded-2xl bg-[#091426] border border-[#182c47]">
+          <div className="p-6 rounded-2xl bg-[#1C1933] border border-[#383154]">
             <Sliders className="w-8 h-8 text-purple-400 mb-4" />
             <h3 className="text-lg font-bold text-white mb-2">3. Hypothetical Simulation Safeguards</h3>
             <p className="text-sm text-slate-300 leading-relaxed mb-3">
@@ -91,7 +91,7 @@ export default function ResponsibleAiPage() {
           </div>
 
           {/* 4. Model & Calibration Governance */}
-          <div className="p-6 rounded-2xl bg-[#091426] border border-[#182c47]">
+          <div className="p-6 rounded-2xl bg-[#1C1933] border border-[#383154]">
             <AlertTriangle className="w-8 h-8 text-amber-400 mb-4" />
             <h3 className="text-lg font-bold text-white mb-2">4. Disclosed Model & Confidence Limits</h3>
             <p className="text-sm text-slate-300 leading-relaxed mb-3">
@@ -106,9 +106,9 @@ export default function ResponsibleAiPage() {
         </div>
 
         {/* Detailed Disclosure Matrix */}
-        <div className="p-8 rounded-2xl bg-[#091426] border border-[#182c47] mb-16">
+        <div className="p-8 rounded-2xl bg-[#1C1933] border border-[#383154] mb-16">
           <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-            <HelpCircle className="w-5 h-5 text-cyan-400" /> Model Limitations & Disclaimers
+            <HelpCircle className="w-5 h-5 text-[#A78BFA]" /> Model Limitations & Disclaimers
           </h2>
           <div className="space-y-4 text-sm text-slate-300 leading-relaxed">
             <div>
@@ -133,7 +133,7 @@ export default function ResponsibleAiPage() {
         </div>
 
         {/* CTA */}
-        <div className="p-8 rounded-2xl bg-gradient-to-r from-[#0c1a2e] to-[#0a1526] border border-[#182c47] text-center">
+        <div className="p-8 rounded-2xl bg-gradient-to-r from-[#1C1933] to-[#1C1933] border border-[#383154] text-center">
           <h2 className="text-xl font-bold text-white mb-2">Review Model Architecture or Test Live Demo</h2>
           <p className="text-sm text-slate-300 max-w-xl mx-auto mb-6">
             Explore our model performance benchmarks or test the safe public demo with synthetic MSME data.
@@ -149,7 +149,7 @@ export default function ResponsibleAiPage() {
         </div>
       </main>
 
-      <footer className="bg-[#040810] border-t border-[#101c2e] py-8 text-center text-xs text-slate-400">
+      <footer className="bg-[#0C0A1D] border-t border-[#1C1933] py-8 text-center text-xs text-slate-400">
         <p>&copy; {new Date().getFullYear()} MSME Risk AI. Ethical Machine Learning & Credit Risk Governance.</p>
       </footer>
     </div>

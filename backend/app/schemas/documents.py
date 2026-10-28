@@ -36,11 +36,29 @@ class DocumentResponse(BaseModel):
     processing_status: str = "UPLOADED"
     error_message: Optional[str] = None
     extracted_data: Dict[str, Any] = {}
+    file_hash: Optional[str] = None
+    verification_report: Dict[str, Any] = {}
+    analyst_decision: Optional[str] = None
+    analyst_notes: Optional[str] = None
+    reviewed_by: Optional[str] = None
+    reviewed_at: Optional[datetime.datetime] = None
     created_at: datetime.datetime
     updated_at: Optional[datetime.datetime] = None
     download_url: Optional[str] = None
     field_count: int = 0
     verified_count: int = 0
+
+class AnalystReviewRequest(BaseModel):
+    decision: str  # APPROVED | REJECTED | INVESTIGATION_REQUIRED | NEEDS_DOCUMENTS
+    notes: Optional[str] = None
+
+class DocumentAuditLogResponse(BaseModel):
+    id: int
+    action: str
+    user_id: str
+    details: Dict[str, Any]
+    created_at: datetime.datetime
+
 
 class DocumentStatusResponse(BaseModel):
     id: int

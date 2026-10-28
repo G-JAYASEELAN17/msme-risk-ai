@@ -87,10 +87,10 @@ export default function CommandPalette() {
         aria-hidden="true"
       />
 
-      <div className="relative w-full max-w-xl rounded-2xl bg-[#0b1629] border border-[#203a60] shadow-2xl shadow-black/90 overflow-hidden z-10 animate-in zoom-in-95 duration-150">
+      <div className="relative w-full max-w-xl rounded-2xl bg-[#1C1933] border border-[#203a60] shadow-2xl shadow-black/90 overflow-hidden z-10 animate-in zoom-in-95 duration-150">
         {/* Search Input Bar */}
-        <div className="flex items-center px-4 py-3.5 border-b border-[#182d4d] bg-[#081222]">
-          <Search className="w-5 h-5 text-cyan-400 shrink-0 mr-3" />
+        <div className="flex items-center px-4 py-3.5 border-b border-[#383154] bg-[#0C0A1D]">
+          <Search className="w-5 h-5 text-[#A78BFA] shrink-0 mr-3" />
           <input
             ref={inputRef}
             type="text"
@@ -99,7 +99,7 @@ export default function CommandPalette() {
             onChange={(e) => setQuery(e.target.value)}
             className="w-full bg-transparent text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none"
           />
-          <span className="text-[10px] font-mono text-slate-500 bg-[#0f1d33] px-2 py-0.5 rounded border border-slate-700">
+          <span className="text-[10px] font-mono text-slate-500 bg-[#1C1933] px-2 py-0.5 rounded border border-slate-700">
             ESC
           </span>
         </div>
@@ -109,7 +109,7 @@ export default function CommandPalette() {
           {/* Search Results if any */}
           {searchResults && (
             <div className="space-y-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-400 px-2 block">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#A78BFA] px-2 block">
                 Search Results ({searchResults.businesses.length + searchResults.assessments.length})
               </span>
 
@@ -123,13 +123,13 @@ export default function CommandPalette() {
                   className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-[#122544] text-left transition-colors text-xs text-slate-200 group"
                 >
                   <div className="flex items-center gap-3">
-                    <Building2 className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <Building2 className="w-4 h-4 text-[#A78BFA] shrink-0" />
                     <div>
                       <p className="font-semibold text-white">{b.name}</p>
                       <p className="text-[11px] text-slate-400">{b.industry} • {b.location}</p>
                     </div>
                   </div>
-                  <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-cyan-400 transition-opacity" />
+                  <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-[#A78BFA] transition-opacity" />
                 </button>
               ))}
 
@@ -145,11 +145,11 @@ export default function CommandPalette() {
                   <div className="flex items-center gap-3">
                     <FileSpreadsheet className="w-4 h-4 text-emerald-400 shrink-0" />
                     <div>
-                      <p className="font-semibold text-white">{a.business_name} (MSME-{a.id}24)</p>
+                      <p className="font-semibold text-white">{a.business_name} (MSME-{a.id})</p>
                       <p className="text-[11px] text-slate-400">Risk: {a.risk_level} ({a.default_probability.toFixed(1)}%)</p>
                     </div>
                   </div>
-                  <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-cyan-400 transition-opacity" />
+                  <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-[#A78BFA] transition-opacity" />
                 </button>
               ))}
 
@@ -178,7 +178,7 @@ export default function CommandPalette() {
                   className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-[#122544] text-left transition-colors text-xs text-slate-200 group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-lg bg-[#0e1e36] text-cyan-400 flex items-center justify-center border border-[#1b3356]">
+                    <div className="w-7 h-7 rounded-lg bg-[#1C1933] text-[#A78BFA] flex items-center justify-center border border-[#1b3356]">
                       <Icon className="w-3.5 h-3.5" />
                     </div>
                     <div>
@@ -186,7 +186,7 @@ export default function CommandPalette() {
                       <p className="text-[10px] text-slate-400">{item.desc}</p>
                     </div>
                   </div>
-                  <span className="text-[11px] text-slate-500 font-mono group-hover:text-cyan-400">
+                  <span className="text-[11px] text-slate-500 font-mono group-hover:text-[#A78BFA]">
                     Jump ↵
                   </span>
                 </button>
@@ -195,7 +195,7 @@ export default function CommandPalette() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between px-4 py-2.5 border-t border-[#182d4d] bg-[#070f1d] text-[11px] text-slate-400">
+        <div className="flex items-center justify-between px-4 py-2.5 border-t border-[#383154] bg-[#0C0A1D] text-[11px] text-slate-400">
           <span>Use <b>↑ ↓</b> to navigate</span>
           <span>Press <b>ESC</b> to close</span>
         </div>

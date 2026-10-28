@@ -33,7 +33,7 @@ export default function RiskVisual() {
           {[
             ["Business stability", "85%", "green"],
             ["Cash flow", "82%", "blue"],
-            ["Payment history", "91%", "cyan"]
+            ["Payment history", "91%", "violet"]
           ].map(([label, value, color]) => (
             <div className="metric" key={label}>
               <div>

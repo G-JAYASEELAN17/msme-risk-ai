@@ -3,7 +3,7 @@ import SEO from "../components/SEO";
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-[#060b14] text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-[#0C0A1D] text-slate-100 flex flex-col">
       <SEO
         title="Privacy Policy | MSME Risk AI"
         description="Learn what data is collected, why it is processed, how financial documents are stored, and how user rights and data deletion requests are honored."
@@ -16,14 +16,14 @@ export default function PrivacyPage() {
         <p className="text-xs text-slate-400 mb-8">Last Updated: October 6, 2026</p>
 
         <div className="prose prose-invert max-w-none text-slate-300 space-y-8 text-sm leading-relaxed">
-          <section className="p-6 rounded-xl bg-[#091426] border border-[#182c47]">
+          <section className="p-6 rounded-xl bg-[#1C1933] border border-[#383154]">
             <h2 className="text-lg font-bold text-white mb-3">1. Overview & Commitment</h2>
             <p>
               MSME Risk AI (“we”, “our”, or “the platform”) provides credit risk evaluation and decision-support software for Micro, Small, and Medium Enterprises and authorized lending institutions. We are committed to transparency in the collection, storage, and processing of commercial financial information.
             </p>
           </section>
 
-          <section className="p-6 rounded-xl bg-[#091426] border border-[#182c47]">
+          <section className="p-6 rounded-xl bg-[#1C1933] border border-[#383154]">
             <h2 className="text-lg font-bold text-white mb-3">2. What Data We Collect</h2>
             <ul className="list-disc list-inside space-y-2">
               <li><strong className="text-white">Account Information:</strong> Name, business email address, Firebase authentication UID, and preferred platform settings.</li>
@@ -34,21 +34,21 @@ export default function PrivacyPage() {
             </ul>
           </section>
 
-          <section className="p-6 rounded-xl bg-[#091426] border border-[#182c47]">
+          <section className="p-6 rounded-xl bg-[#1C1933] border border-[#383154]">
             <h2 className="text-lg font-bold text-white mb-3">3. Why We Collect This Data</h2>
             <p>
               Data is collected solely to compute calibrated MSME default probability predictions, generate explainable risk factor breakdowns, support underwriter review notes, and maintain regulatory compliance audit logs. We do not sell or monetize commercial borrower data to third-party ad networks.
             </p>
           </section>
 
-          <section className="p-6 rounded-xl bg-[#091426] border border-[#182c47]">
+          <section className="p-6 rounded-xl bg-[#1C1933] border border-[#383154]">
             <h2 className="text-lg font-bold text-white mb-3">4. Document Storage & Protection</h2>
             <p>
               Uploaded financial documents are isolated within private, authenticated cloud storage buckets mapped strictly to your authenticated UID. Access requires valid Firebase Bearer tokens or time-limited signed URLs. Documents are never made publicly accessible.
             </p>
           </section>
 
-          <section className="p-6 rounded-xl bg-[#091426] border border-[#182c47]">
+          <section className="p-6 rounded-xl bg-[#1C1933] border border-[#383154]">
             <h2 className="text-lg font-bold text-white mb-3">5. User Rights & Data Deletion Requests</h2>
             <p>
               Under applicable data protection frameworks, users maintain rights regarding their personal and commercial data:
@@ -60,7 +60,7 @@ export default function PrivacyPage() {
             </ul>
           </section>
 
-          <section className="p-6 rounded-xl bg-[#091426] border border-[#182c47]">
+          <section className="p-6 rounded-xl bg-[#1C1933] border border-[#383154]">
             <h2 className="text-lg font-bold text-white mb-3">6. Legal Review Disclaimer</h2>
             <p className="text-xs text-slate-400">
               *Notice: This policy represents standard institutional SaaS data protection practices. Specific financial jurisdictions (e.g. GDPR, FCRA, RBI MSME lending guidelines) may require additional localized contractual schedules upon commercial enterprise onboarding.*
@@ -69,7 +69,7 @@ export default function PrivacyPage() {
         </div>
       </main>
 
-      <footer className="bg-[#040810] border-t border-[#101c2e] py-8 text-center text-xs text-slate-400">
+      <footer className="bg-[#0C0A1D] border-t border-[#1C1933] py-8 text-center text-xs text-slate-400">
         <p>&copy; {new Date().getFullYear()} MSME Risk AI. Privacy Governance.</p>
       </footer>
     </div>

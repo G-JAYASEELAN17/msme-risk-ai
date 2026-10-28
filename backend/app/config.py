@@ -63,6 +63,10 @@ class Settings(BaseSettings):
     # Demo Data Seeding Toggle (False by default for strict user data isolation)
     SEED_DEMO_DATA: bool = False
     
+    # Initial Administrator Provisioning Configuration
+    INITIAL_ADMIN_EMAIL: str = "jayaseelang177@gmail.com"
+    INITIAL_ADMIN_PASSWORD: Optional[str] = None
+    
     # ML Model & Preprocessor Configuration
     MODEL_VERSION: str = "1.1.0"
     MODEL_PATH: str = str(Path(__file__).resolve().parent.parent / "ml" / "models" / "model.joblib")

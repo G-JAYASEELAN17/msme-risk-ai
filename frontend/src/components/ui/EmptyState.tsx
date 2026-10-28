@@ -7,7 +7,8 @@ export interface EmptyStateProps {
   title: string;
   description: string;
   actionText?: string;
-  onAction?: () => void;
+  actionLabel?: string;
+  onAction?: () => void | Promise<void>;
   actionIcon?: React.ReactNode;
   action?: React.ReactNode;
 }
@@ -17,6 +18,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   title,
   description,
   actionText,
+  actionLabel,
   onAction,
   actionIcon,
   action,
@@ -31,20 +33,23 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     return <FolderOpen className="w-7 h-7" />;
   };
 
+  const buttonText = actionText || actionLabel;
+
   return (
-    <div className="flex flex-col items-center justify-center text-center p-8 sm:p-12 rounded-xl border border-dashed border-[#1e3352] bg-[#091322]/50">
-      <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center mb-4 shadow-lg shadow-cyan-950/30">
+    <div className="flex flex-col items-center justify-center text-center p-8 sm:p-12 rounded-2xl border border-dashed border-[#383154] bg-[#1C1933]/60">
+      <div className="w-14 h-14 rounded-2xl bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 text-[#A78BFA] flex items-center justify-center mb-4 shadow-lg shadow-[#8B5CF6]/10">
         {renderIcon()}
       </div>
-      <h3 className="text-base sm:text-lg font-semibold text-white mb-2">{title}</h3>
-      <p className="text-xs sm:text-sm text-slate-400 max-w-sm mb-6 leading-relaxed">
+      <h3 className="text-base sm:text-lg font-bold text-[#F5F3FF] font-['Space_Grotesk'] mb-2">{title}</h3>
+      <p className="text-xs sm:text-sm text-[#B7B1D1] max-w-sm mb-6 leading-relaxed">
         {description}
       </p>
-      {actionText && onAction && (
-        <Button onClick={onAction} icon={actionIcon} size="md">
-          {actionText}
+      {buttonText && onAction && (
+        <Button onClick={() => void onAction()} icon={actionIcon} size="md">
+          {buttonText}
         </Button>
       )}
+      {action && <div className="mt-4">{action}</div>}
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import AdminHeader from "./AdminHeader";
 import {
@@ -87,7 +88,7 @@ export default function AdminAssessments() {
   }, [assessments, riskFilter, statusFilter, searchQuery]);
 
   return (
-    <div className="flex min-h-screen bg-[#030712] text-slate-100">
+    <div className="flex min-h-screen bg-[#0C0A1D] text-slate-100">
       <Sidebar active="Assessments" />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
@@ -102,7 +103,7 @@ export default function AdminAssessments() {
 
         <main className="p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
           {/* Controls Bar: Search & Filters */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b]">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 rounded-2xl bg-[#0C0A1D] border border-[#383154]">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
@@ -110,7 +111,7 @@ export default function AdminAssessments() {
                 placeholder="Search by business name or assessment ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#0d1c33] border border-[#1d3559] text-sm text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500 transition"
+                className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#1C1933] border border-[#1d3559] text-sm text-white placeholder-slate-400 focus:outline-none focus:border-[#8B5CF6] transition"
               />
               {searchQuery && (
                 <button
@@ -127,7 +128,7 @@ export default function AdminAssessments() {
               <select
                 value={riskFilter}
                 onChange={(e) => setRiskFilter(e.target.value)}
-                className="px-3 py-2 rounded-xl bg-[#0d1c33] border border-[#1d3559] text-xs font-semibold text-slate-200 focus:outline-none focus:border-cyan-500"
+                className="px-3 py-2 rounded-xl bg-[#1C1933] border border-[#1d3559] text-xs font-semibold text-slate-200 focus:outline-none focus:border-[#8B5CF6]"
               >
                 <option value="all">All Risk Levels</option>
                 <option value="low">Low Risk</option>
@@ -139,7 +140,7 @@ export default function AdminAssessments() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 rounded-xl bg-[#0d1c33] border border-[#1d3559] text-xs font-semibold text-slate-200 focus:outline-none focus:border-cyan-500"
+                className="px-3 py-2 rounded-xl bg-[#1C1933] border border-[#1d3559] text-xs font-semibold text-slate-200 focus:outline-none focus:border-[#8B5CF6]"
               >
                 <option value="all">All Review Statuses</option>
                 <option value="pending">Pending</option>
@@ -150,7 +151,7 @@ export default function AdminAssessments() {
 
               <button
                 onClick={loadAssessments}
-                className="p-2 rounded-xl bg-[#0d1c33] border border-[#1d3559] text-slate-300 hover:text-white hover:bg-slate-800 transition shrink-0"
+                className="p-2 rounded-xl bg-[#1C1933] border border-[#1d3559] text-slate-300 hover:text-white hover:bg-slate-800 transition shrink-0"
                 title="Refresh assessments"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -182,10 +183,10 @@ export default function AdminAssessments() {
               }}
             />
           ) : (
-            <div className="rounded-2xl bg-[#081120] border border-[#1a2d4b] overflow-hidden shadow-xl">
+            <div className="rounded-2xl bg-[#0C0A1D] border border-[#383154] overflow-hidden shadow-xl">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm text-slate-300">
-                  <thead className="bg-[#0c182b] text-[11px] uppercase tracking-wider text-slate-400 border-b border-[#1a2d4b]">
+                  <thead className="bg-[#1C1933] text-[11px] uppercase tracking-wider text-slate-400 border-b border-[#383154]">
                     <tr>
                       <th className="py-3 px-4">ID</th>
                       <th className="py-3 px-4">Business</th>
@@ -197,7 +198,7 @@ export default function AdminAssessments() {
                       <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#162742]">
+                  <tbody className="divide-y divide-[#383154]">
                     {filteredAssessments.map((a) => {
                       const prob =
                         a.default_probability !== undefined && a.default_probability !== null
@@ -216,7 +217,7 @@ export default function AdminAssessments() {
                           </td>
 
                           <td className="py-3.5 px-4">
-                            <div className="font-semibold text-white truncate max-w-xs hover:text-cyan-300 transition">
+                            <div className="font-semibold text-white truncate max-w-xs hover:text-[#C4B5FD] transition">
                               {a.business_name || `MSME Account #${a.id}`}
                             </div>
                             <div className="text-[11px] text-slate-400 truncate">
@@ -299,7 +300,7 @@ export default function AdminAssessments() {
                                 e.stopPropagation();
                                 setSelectedAssessment(a);
                               }}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-[#0d1c33] text-cyan-300 hover:text-white hover:bg-cyan-600/30 border border-[#1d3559] transition"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-[#1C1933] text-[#C4B5FD] hover:text-white hover:bg-[#8B5CF6]/30 border border-[#1d3559] transition"
                             >
                               <Eye className="w-3.5 h-3.5" />
                               <span>Inspect</span>
@@ -313,7 +314,7 @@ export default function AdminAssessments() {
               </div>
 
               {/* Table Footer */}
-              <div className="p-3.5 bg-[#0c182b] border-t border-[#1a2d4b] text-xs text-slate-400 flex items-center justify-between">
+              <div className="p-3.5 bg-[#1C1933] border-t border-[#383154] text-xs text-slate-400 flex items-center justify-between">
                 <span>Showing {filteredAssessments.length} of {assessments.length} assessments</span>
                 <span className="text-slate-400">Click any scorecard to inspect underlying underwriting figures</span>
               </div>
@@ -323,8 +324,8 @@ export default function AdminAssessments() {
           {/* Assessment Inspection Modal */}
           {selectedAssessment && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-              <div className="relative w-full max-w-2xl bg-[#081120] border border-[#1e3458] rounded-2xl p-6 shadow-2xl">
-                <div className="flex items-center justify-between pb-4 border-b border-[#1a2d4b]">
+              <div className="relative w-full max-w-2xl bg-[#0C0A1D] border border-[#383154] rounded-2xl p-6 shadow-2xl">
+                <div className="flex items-center justify-between pb-4 border-b border-[#383154]">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center font-bold text-sm">
                       <FileCheck className="w-5 h-5" />
@@ -348,7 +349,7 @@ export default function AdminAssessments() {
 
                 <div className="mt-5 space-y-5">
                   {/* Risk Overview Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl bg-[#0c182b] border border-[#1a2d4b] text-xs">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl bg-[#1C1933] border border-[#383154] text-xs">
                     <div>
                       <span className="text-slate-400 block mb-0.5">Risk Tier</span>
                       <strong className="text-white text-sm capitalize">
@@ -357,7 +358,7 @@ export default function AdminAssessments() {
                     </div>
                     <div>
                       <span className="text-slate-400 block mb-0.5">Default Probability</span>
-                      <strong className="text-cyan-400 text-sm">
+                      <strong className="text-[#A78BFA] text-sm">
                         {selectedAssessment.default_probability !== undefined && selectedAssessment.default_probability !== null
                           ? `${Math.round(selectedAssessment.default_probability * 100)}%`
                           : "—"}
@@ -380,7 +381,7 @@ export default function AdminAssessments() {
                   </div>
 
                   {/* Financial Metrics */}
-                  <div className="p-4 rounded-xl bg-[#0d1c33] border border-[#1a2d4b] space-y-3">
+                  <div className="p-4 rounded-xl bg-[#1C1933] border border-[#383154] space-y-3">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
                       Application Financials
                     </h4>
@@ -402,21 +403,21 @@ export default function AdminAssessments() {
 
                   {/* Review Notes */}
                   {selectedAssessment.review_notes && (
-                    <div className="p-4 rounded-xl bg-[#0c182b] border border-[#1a2d4b] text-xs space-y-1">
+                    <div className="p-4 rounded-xl bg-[#1C1933] border border-[#383154] text-xs space-y-1">
                       <span className="text-slate-400 block font-semibold">Analyst Review Notes:</span>
                       <p className="text-slate-200 leading-relaxed">
                         {selectedAssessment.review_notes}
                       </p>
                       {selectedAssessment.reviewed_by && (
                         <div className="text-[11px] text-slate-400 mt-2 pt-2 border-t border-slate-800">
-                          Reviewed by: <span className="text-cyan-400">{selectedAssessment.reviewed_by}</span>
+                          Reviewed by: <span className="text-[#A78BFA]">{selectedAssessment.reviewed_by}</span>
                         </div>
                       )}
                     </div>
                   )}
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-[#1a2d4b] flex justify-end">
+                <div className="mt-6 pt-4 border-t border-[#383154] flex justify-end">
                   <button
                     onClick={() => setSelectedAssessment(null)}
                     className="px-4 py-2 rounded-xl text-xs font-medium text-white bg-slate-800 hover:bg-slate-700 transition"

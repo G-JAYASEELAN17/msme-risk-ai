@@ -1,4 +1,6 @@
 import os
+import io
+import hashlib
 import datetime
 import logging
 from typing import Dict, Any, List, Optional
@@ -8,6 +10,7 @@ from fastapi import HTTPException, status
 from ..database import models
 from .storage_service import storage_service
 from .extraction_service import run_document_extraction, parse_financial_number
+from .verification_service import verification_engine
 from .audit_service import log_audit_event
 
 logger = logging.getLogger("document_service")
@@ -26,11 +29,12 @@ class DocumentService:
         file_bytes: Optional[bytes] = None
     ) -> models.Document:
         """
-        Executes document intelligence pipeline:
-        1. Reads file bytes from storage if not provided.
-        2. Performs classification & field extraction.
-        3. Persists normalized fields into PostgreSQL with full audit tracking.
-        4. Notifies user that human review is required.
+        Executes document intelligence & verification pipeline:
+        1. Reads file bytes from storage or memory.
+        2. Computes SHA-256 hash for integrity and duplicate tracking.
+        3. Performs classification & field extraction.
+        4. Runs multi-check Verification Engine (arithmetic, cross-doc, external registry).
+        5. Persists normalized fields into PostgreSQL with audit tracking.
         """
         doc = db.query(models.Document).filter(
             models.Document.id == document_id,
@@ -47,14 +51,15 @@ class DocumentService:
         try:
             # 1. Retrieve bytes if not in memory
             if file_bytes is None:
-                local_path = storage_service.get_local_path(doc.file_path)
-                if local_path and local_path.is_file():
-                    with open(local_path, "rb") as f:
-                        file_bytes = f.read()
-                else:
+                file_bytes = storage_service.get_file_bytes_sync(doc.user_id, doc.file_path)
+                if file_bytes is None:
                     raise ValueError("File content could not be retrieved from storage.")
 
-            # 2. Run extraction pipeline
+            # 2. Calculate SHA-256 file hash
+            file_hash = hashlib.sha256(file_bytes).hexdigest()
+            doc.file_hash = file_hash
+
+            # 3. Run extraction pipeline
             type_hint = doc.document_type if doc.document_type and doc.document_type != "OTHER" else None
             extraction_result = run_document_extraction(
                 file_bytes=file_bytes,
@@ -63,17 +68,16 @@ class DocumentService:
                 document_type_hint=type_hint
             )
 
-            # 3. Update document metadata
+            # 4. Update document metadata
             doc.document_type = extraction_result.document_type
-            doc.processing_status = "REVIEW_REQUIRED"
             doc.status = "processed"
 
-            # 4. Clear old fields if re-processing
+            # 5. Clear old fields if re-processing
             db.query(models.ExtractedField).filter(
                 models.ExtractedField.document_id == doc.id
             ).delete()
 
-            # 5. Populate ExtractedField rows
+            # 6. Populate ExtractedField rows
             fields_dict: Dict[str, Any] = {}
             for field_name, f_data in extraction_result.fields.items():
                 if f_data.normalized_value is not None or f_data.string_value is not None:
@@ -109,26 +113,57 @@ class DocumentService:
             db.commit()
             db.refresh(doc)
 
-            # 6. Audit log & notification
+            # 7. Run Verification Engine
+            ver_report = verification_engine.run_verification(
+                document=doc,
+                db=db,
+                file_bytes=file_bytes
+            )
+            doc.processing_status = ver_report.overall_status
+
+            # Auto-sync identity verification if PAN is extracted or document is PAN_CARD
+            extracted_pan = fields_dict.get("pan", {}).get("value")
+            extracted_name = fields_dict.get("business_name", {}).get("value") or fields_dict.get("account_holder", {}).get("value")
+            dob_val = fields_dict.get("dob", {}).get("value")
+            if (doc.document_type == "PAN_CARD" or extracted_pan) and extracted_pan:
+                try:
+                    from .identity_service import IdentityVerificationEngine
+                    id_engine = IdentityVerificationEngine(db)
+                    id_engine.verify_pan_document(
+                        user_id=user_id,
+                        business_id=doc.business_id,
+                        document_id=doc.id,
+                        extracted_pan=str(extracted_pan),
+                        extracted_name=str(extracted_name) if extracted_name else None,
+                        dob_or_incorporation=str(dob_val) if dob_val else None,
+                        extraction_confidence=extraction_result.overall_confidence
+                    )
+                except Exception as e:
+                    logger.warning(f"Auto-sync identity verification for PAN skipped: {e}")
+
+            # 8. Audit log & notification
             log_audit_event(
                 db=db,
                 user_id=user_id,
-                action="DOCUMENT_EXTRACTION_COMPLETED",
+                action="DOCUMENT_EXTRACTION_AND_VERIFICATION_COMPLETED",
                 resource_type="document",
                 resource_id=str(doc.id),
                 details={
                     "document_type": doc.document_type,
                     "fields_extracted": len(fields_dict),
-                    "confidence": extraction_result.overall_confidence
+                    "confidence": extraction_result.overall_confidence,
+                    "verification_status": doc.processing_status,
+                    "discrepancies_count": len(ver_report.discrepancies)
                 }
             )
 
             # Create in-app notification
+            status_text = "Verified" if doc.processing_status == "VERIFIED" else "Ready for Review"
             notification = models.Notification(
                 user_id=user_id,
-                title="Document Ready for Review",
-                message=f"Financial extraction completed for '{doc.original_filename}'. Please verify values before using in an assessment.",
-                type="info",
+                title=f"Document {status_text}",
+                message=f"Analysis completed for '{doc.original_filename}'. Status: {doc.processing_status}. {ver_report.explanation}",
+                type="success" if doc.processing_status == "VERIFIED" else "warning" if "MISMATCH" in doc.processing_status else "info",
                 is_read=False,
                 link=f"/documents"
             )
@@ -139,7 +174,7 @@ class DocumentService:
 
         except Exception as e:
             logger.error(f"Error processing document {document_id}: {e}", exc_info=True)
-            doc.processing_status = "FAILED"
+            doc.processing_status = "PROCESSING_FAILED"
             doc.error_message = str(e)
             doc.status = "error"
             db.commit()
@@ -210,6 +245,18 @@ class DocumentService:
         db.commit()
         db.refresh(field)
 
+        # Re-run verification engine with updated field data
+        try:
+            ver_report = verification_engine.run_verification(
+                document=doc,
+                db=db
+            )
+            doc.processing_status = ver_report.overall_status
+            db.commit()
+            db.refresh(doc)
+        except Exception as e:
+            logger.warning(f"Verification re-run after field edit failed: {e}")
+
         log_audit_event(
             db=db,
             user_id=user_id,
@@ -225,6 +272,122 @@ class DocumentService:
         )
 
         return field
+
+    @staticmethod
+    def submit_analyst_review(
+        document_id: int,
+        analyst_user: models.User,
+        decision: str,  # APPROVED | REJECTED | INVESTIGATION_REQUIRED | NEEDS_DOCUMENTS
+        notes: Optional[str],
+        db: Session
+    ) -> models.Document:
+        """
+        Records human risk analyst decision on a financial document.
+        APPROVED: Marks document as VERIFIED by underwriter policy.
+        REJECTED: Rejects document authenticity/validity.
+        INVESTIGATION_REQUIRED: Flags document for forensic audit.
+        NEEDS_DOCUMENTS: Asks applicant for additional supporting evidence.
+        """
+        doc = db.query(models.Document).filter(
+            models.Document.id == document_id
+        ).first()
+
+        if not doc:
+            raise HTTPException(status_code=404, detail="Document not found.")
+
+        valid_decisions = ["APPROVED", "REJECTED", "INVESTIGATION_REQUIRED", "NEEDS_DOCUMENTS"]
+        decision_upper = decision.upper().strip()
+        if decision_upper not in valid_decisions:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid decision '{decision}'. Allowed: {', '.join(valid_decisions)}"
+            )
+
+        now = datetime.datetime.utcnow()
+        doc.analyst_decision = decision_upper
+        doc.analyst_notes = notes.strip() if notes else None
+        doc.reviewed_by = analyst_user.uid
+        doc.reviewed_at = now
+
+        if decision_upper == "APPROVED":
+            doc.processing_status = "VERIFIED"
+            doc.status = "verified"
+            # Mark extracted fields as analyst-verified
+            for f in doc.fields:
+                f.is_verified = True
+                f.verified_by = analyst_user.uid
+                f.verified_at = now
+                if not f.verified_value:
+                    f.verified_value = str(f.normalized_value if f.normalized_value is not None else f.string_value)
+        elif decision_upper == "REJECTED":
+            doc.processing_status = "MISMATCH_FOUND"
+            doc.status = "error"
+        else:
+            doc.processing_status = "MANUAL_REVIEW_REQUIRED"
+
+        # Re-run verification report generation with analyst decision reflected
+        ver_report = verification_engine.run_verification(document=doc, db=db)
+        if decision_upper == "APPROVED":
+            doc.processing_status = "VERIFIED"
+            doc.status = "verified"
+
+        db.commit()
+        db.refresh(doc)
+
+        log_audit_event(
+            db=db,
+            user_id=analyst_user.uid,
+            action="ANALYST_DOCUMENT_REVIEW",
+            resource_type="document",
+            resource_id=str(doc.id),
+            details={
+                "decision": decision_upper,
+                "notes": notes,
+                "analyst_id": analyst_user.uid,
+                "document_owner": doc.user_id
+            }
+        )
+
+        # Notify document owner
+        notif_msg = f"Your document '{doc.original_filename}' review decision: {decision_upper}."
+        if notes:
+            notif_msg += f" Note: {notes}"
+        notif = models.Notification(
+            user_id=doc.user_id,
+            title=f"Document Review: {decision_upper.title().replace('_', ' ')}",
+            message=notif_msg,
+            type="success" if decision_upper == "APPROVED" else "warning" if decision_upper == "REJECTED" else "info",
+            is_read=False,
+            link="/documents"
+        )
+        db.add(notif)
+        db.commit()
+
+        return doc
+
+    @staticmethod
+    def retry_verification(
+        document_id: int,
+        user_id: str,
+        db: Session
+    ) -> models.Document:
+        """
+        Retries or re-evaluates verification engine on an existing document.
+        Does not leave record stuck in 'Processing'.
+        """
+        doc = db.query(models.Document).filter(
+            models.Document.id == document_id
+        ).first()
+
+        if not doc:
+            raise HTTPException(status_code=404, detail="Document not found.")
+
+        return DocumentService.process_document(
+            document_id=doc.id,
+            user_id=doc.user_id,
+            db=db
+        )
+
 
     @staticmethod
     def verify_all_fields(

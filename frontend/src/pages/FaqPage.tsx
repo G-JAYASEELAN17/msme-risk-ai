@@ -39,7 +39,7 @@ export default function FaqPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#060b14] text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-[#0C0A1D] text-slate-100 flex flex-col">
       <SEO
         title="Frequently Asked Questions | MSME Risk AI"
         description="Find answers to common questions about MSME Risk AI model selection, default prediction, explainability, security, and underwriter workflows."
@@ -49,7 +49,7 @@ export default function FaqPage() {
 
       <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-800 text-cyan-300 text-xs font-semibold mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#8B5CF6]/15 border border-[#383154] text-[#C4B5FD] text-xs font-semibold mb-4">
             Knowledge Base
           </div>
           <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
@@ -62,9 +62,9 @@ export default function FaqPage() {
 
         <div className="space-y-6">
           {faqs.map((faq, i) => (
-            <div key={i} className="p-6 rounded-2xl bg-[#091426] border border-[#182c47]">
+            <div key={i} className="p-6 rounded-2xl bg-[#1C1933] border border-[#383154]">
               <h2 className="text-base font-bold text-white mb-2 flex items-center gap-2">
-                <HelpCircle className="w-5 h-5 text-cyan-400 shrink-0" />
+                <HelpCircle className="w-5 h-5 text-[#A78BFA] shrink-0" />
                 {faq.q}
               </h2>
               <p className="text-sm text-slate-300 leading-relaxed pl-7">{faq.a}</p>
@@ -73,7 +73,7 @@ export default function FaqPage() {
         </div>
       </main>
 
-      <footer className="bg-[#040810] border-t border-[#101c2e] py-8 text-center text-xs text-slate-400">
+      <footer className="bg-[#0C0A1D] border-t border-[#1C1933] py-8 text-center text-xs text-slate-400">
         <p>&copy; {new Date().getFullYear()} MSME Risk AI. All rights reserved.</p>
       </footer>
     </div>

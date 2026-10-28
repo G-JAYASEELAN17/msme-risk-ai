@@ -8,7 +8,7 @@ export default function NotFoundPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-[#060b14] text-slate-100 flex flex-col selection:bg-cyan-500/20">
+    <div className="min-h-screen bg-[#0C0A1D] text-slate-100 flex flex-col selection:bg-[#8B5CF6]/20">
       <SEO
         title="404 — Page Not Found | MSME Risk AI"
         description="The page you requested could not be found. Explore MSME Risk AI features, public demo, or return to homepage."
@@ -18,10 +18,10 @@ export default function NotFoundPage() {
 
       <main className="flex-1 flex items-center justify-center px-4 py-20">
         <div className="max-w-md w-full text-center">
-          <div className="w-20 h-20 rounded-2xl bg-cyan-950/40 border border-cyan-800/60 flex items-center justify-center mx-auto mb-6 text-cyan-400">
+          <div className="w-20 h-20 rounded-2xl bg-[#8B5CF6]/10 border border-[#8B5CF6]/30 flex items-center justify-center mx-auto mb-6 text-[#A78BFA]">
             <AlertCircle className="w-10 h-10" />
           </div>
-          <span className="text-xs uppercase font-mono tracking-widest text-cyan-400 font-semibold">
+          <span className="text-xs uppercase font-mono tracking-widest text-[#A78BFA] font-semibold">
             Error 404
           </span>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white mt-2 mb-4 tracking-tight">
@@ -42,7 +42,7 @@ export default function NotFoundPage() {
         </div>
       </main>
 
-      <footer className="bg-[#040810] border-t border-[#101c2e] py-6 text-center text-xs text-slate-400">
+      <footer className="bg-[#0C0A1D] border-t border-[#1C1933] py-6 text-center text-xs text-slate-400">
         <p>&copy; {new Date().getFullYear()} MSME Risk AI. All rights reserved.</p>
       </footer>
     </div>

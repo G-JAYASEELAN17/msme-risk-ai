@@ -31,7 +31,7 @@ export default function Home() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-[#060b14] text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-[#0C0A1D] text-slate-100 flex flex-col">
       <SEO
         title="AI-Assisted MSME Credit Risk Assessment | MSME Risk AI"
         description="Analyze business and financial data, understand credit risk, and support faster analyst-led lending decisions with explainable AI."
@@ -43,19 +43,19 @@ export default function Home() {
       <main className="flex-1">
         {/* SECTION 1: HERO */}
         <section className="relative overflow-hidden py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="absolute -top-40 -left-40 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -top-40 -left-40 w-96 h-96 bg-[#8B5CF6]/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute top-1/2 -right-40 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             <div className="lg:col-span-7 flex flex-col items-start">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0c1c33] border border-[#1c3960] text-cyan-400 text-xs font-semibold mb-6 shadow-sm">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0c1c33] border border-[#1c3960] text-[#A78BFA] text-xs font-semibold mb-6 shadow-sm">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                 <span>Next-Gen MSME Underwriting Decision Support</span>
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight mb-6">
                 AI-Assisted MSME{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-emerald-400">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#8B5CF6] via-blue-400 to-emerald-400">
                   Credit Risk Assessment
                 </span>
               </h1>
@@ -79,16 +79,16 @@ export default function Home() {
                   href="#how-it-works"
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-[#233854] bg-[#0c182b] hover:bg-[#12233f] text-slate-200 text-sm font-semibold transition-all hover:border-[#38bdf8]"
                 >
-                  <PlayCircle className="w-4 h-4 text-cyan-400" />
+                  <PlayCircle className="w-4 h-4 text-[#A78BFA]" />
                   <span>Explore How It Works</span>
                 </a>
               </div>
 
               <div className="flex items-center gap-4 mt-10 pt-8 border-t border-[#14233a] w-full">
                 <div className="flex -space-x-2 overflow-hidden">
-                  <div className="inline-block h-8 w-8 rounded-full ring-2 ring-[#060b14] bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white">AK</div>
-                  <div className="inline-block h-8 w-8 rounded-full ring-2 ring-[#060b14] bg-cyan-600 flex items-center justify-center text-[10px] font-bold text-white">JM</div>
-                  <div className="inline-block h-8 w-8 rounded-full ring-2 ring-[#060b14] bg-emerald-600 flex items-center justify-center text-[10px] font-bold text-white">PS</div>
+                  <div className="inline-block h-8 w-8 rounded-full ring-2 ring-[#0C0A1D] bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white">AK</div>
+                  <div className="inline-block h-8 w-8 rounded-full ring-2 ring-[#0C0A1D] bg-[#8B5CF6] flex items-center justify-center text-[10px] font-bold text-white">JM</div>
+                  <div className="inline-block h-8 w-8 rounded-full ring-2 ring-[#0C0A1D] bg-emerald-600 flex items-center justify-center text-[10px] font-bold text-white">PS</div>
                 </div>
                 <div className="text-xs text-slate-300">
                   <span className="font-semibold text-white">1,200+ Credit Analysts</span> evaluating MSME loan portfolios with explainable precision
@@ -103,7 +103,7 @@ export default function Home() {
         </section>
 
         {/* SECTION 2: THE PROBLEM */}
-        <section className="py-16 bg-[#08101e] border-y border-[#14233a]">
+        <section className="py-16 bg-[#0C0A1D] border-y border-[#14233a]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-3xl mx-auto mb-12">
               <h2 className="text-xs font-bold uppercase tracking-wider text-rose-400 mb-2">The Traditional Lending Challenge</h2>
@@ -149,7 +149,7 @@ export default function Home() {
         {/* SECTION 3: HOW IT WORKS */}
         <section id="how-it-works" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2">Underwriting Architecture</h2>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-[#A78BFA] mb-2">Underwriting Architecture</h2>
             <p className="text-3xl font-extrabold text-white">How To Assess An MSME In 4 Steps</p>
             <p className="text-slate-300 mt-3 text-sm">
               From enterprise telemetry to credit committee decisioning, our automated workflow bridges alternative signals with institutional governance.
@@ -179,9 +179,9 @@ export default function Home() {
                 desc: "Credit committee reviews comprehensive audit reports and records official decisions with review notes."
               }
             ].map((s, idx) => (
-              <div key={idx} className="relative p-6 rounded-2xl bg-[#0c182b] border border-[#182c47] flex flex-col justify-between">
+              <div key={idx} className="relative p-6 rounded-2xl bg-[#0c182b] border border-[#383154] flex flex-col justify-between">
                 <div>
-                  <div className="text-3xl font-black text-cyan-500/20 mb-3">{s.step}</div>
+                  <div className="text-3xl font-black text-[#8B5CF6]/20 mb-3">{s.step}</div>
                   <h3 className="text-base font-bold text-white mb-2">{s.title}</h3>
                   <p className="text-sm text-slate-300 leading-relaxed">{s.desc}</p>
                 </div>
@@ -191,11 +191,11 @@ export default function Home() {
         </section>
 
         {/* SECTION 4: AI RISK ASSESSMENT */}
-        <section className="py-20 bg-[#070e1c] border-y border-[#14233a]">
+        <section className="py-20 bg-[#0C0A1D] border-y border-[#14233a]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-800 text-cyan-300 text-xs font-semibold mb-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#8B5CF6]/15 border border-[#383154] text-[#C4B5FD] text-xs font-semibold mb-4">
                   <PieChart className="w-3.5 h-3.5" /> High Precision Discrimination
                 </div>
                 <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-6">
@@ -241,23 +241,23 @@ export default function Home() {
                   <span className="text-xs px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-400 font-bold font-mono">XGBoost v1.1.0</span>
                 </div>
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center p-3.5 rounded-xl bg-[#070e1c] border border-slate-800">
+                  <div className="flex justify-between items-center p-3.5 rounded-xl bg-[#0C0A1D] border border-slate-800">
                     <span className="text-sm text-slate-300">Normalized Risk Score:</span>
-                    <span className="text-xl font-extrabold text-cyan-400 font-mono">18 / 100</span>
+                    <span className="text-xl font-extrabold text-[#A78BFA] font-mono">18 / 100</span>
                   </div>
-                  <div className="flex justify-between items-center p-3.5 rounded-xl bg-[#070e1c] border border-slate-800">
+                  <div className="flex justify-between items-center p-3.5 rounded-xl bg-[#0C0A1D] border border-slate-800">
                     <span className="text-sm text-slate-300">Default Probability:</span>
                     <span className="text-lg font-bold text-emerald-400 font-mono">4.2%</span>
                   </div>
-                  <div className="flex justify-between items-center p-3.5 rounded-xl bg-[#070e1c] border border-slate-800">
+                  <div className="flex justify-between items-center p-3.5 rounded-xl bg-[#0C0A1D] border border-slate-800">
                     <span className="text-sm text-slate-300">Calculated Risk Tier:</span>
                     <span className="text-xs font-bold text-emerald-400 px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/30">LOW</span>
                   </div>
-                  <div className="flex justify-between items-center p-3.5 rounded-xl bg-[#070e1c] border border-slate-800">
+                  <div className="flex justify-between items-center p-3.5 rounded-xl bg-[#0C0A1D] border border-slate-800">
                     <span className="text-sm text-slate-300">Model Confidence Indicator:</span>
                     <span className="text-sm font-semibold text-slate-200 font-mono">95.8%</span>
                   </div>
-                  <div className="flex justify-between items-center p-3.5 rounded-xl bg-[#070e1c] border border-slate-800">
+                  <div className="flex justify-between items-center p-3.5 rounded-xl bg-[#0C0A1D] border border-slate-800">
                     <span className="text-sm text-slate-300">Validation Metric:</span>
                     <span className="text-sm font-semibold text-purple-300 font-mono">ROC-AUC 0.9647</span>
                   </div>
@@ -273,22 +273,22 @@ export default function Home() {
             <div className="order-2 lg:order-1 bg-[#0c182b] border border-[#1b3152] rounded-2xl p-6">
               <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
                 <span className="text-xs uppercase text-slate-400 font-semibold">OCR Data Extraction Pipeline</span>
-                <span className="text-xs px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono">Verified Extraction</span>
+                <span className="text-xs px-2 py-0.5 rounded bg-[#8B5CF6]/20 text-[#C4B5FD] font-mono">Verified Extraction</span>
               </div>
               <div className="space-y-3 text-xs">
-                <div className="p-3 bg-[#081220] rounded-lg border border-slate-800 flex justify-between items-center">
+                <div className="p-3 bg-[#0C0A1D] rounded-lg border border-slate-800 flex justify-between items-center">
                   <span className="text-slate-300">Extracted Annual Revenue</span>
                   <span className="font-mono font-bold text-white">$2,400,000 (Confidence: 94%)</span>
                 </div>
-                <div className="p-3 bg-[#081220] rounded-lg border border-slate-800 flex justify-between items-center">
+                <div className="p-3 bg-[#0C0A1D] rounded-lg border border-slate-800 flex justify-between items-center">
                   <span className="text-slate-300">Extracted Operating Expenses</span>
                   <span className="font-mono font-bold text-white">$90,000 / mo (Confidence: 91%)</span>
                 </div>
-                <div className="p-3 bg-[#081220] rounded-lg border border-slate-800 flex justify-between items-center">
+                <div className="p-3 bg-[#0C0A1D] rounded-lg border border-slate-800 flex justify-between items-center">
                   <span className="text-slate-300">Total Liabilities Identified</span>
                   <span className="font-mono font-bold text-white">$210,000 (Confidence: 89%)</span>
                 </div>
-                <div className="p-3 bg-[#081220] rounded-lg border border-slate-800 flex justify-between items-center">
+                <div className="p-3 bg-[#0C0A1D] rounded-lg border border-slate-800 flex justify-between items-center">
                   <span className="text-slate-300">Borrower Data Verification</span>
                   <span className="font-semibold text-emerald-400">✓ Manually Confirmed</span>
                 </div>
@@ -307,15 +307,15 @@ export default function Home() {
               </p>
               <ul className="space-y-3 text-sm text-slate-300">
                 <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-[#A78BFA] shrink-0" />
                   <span>Automated confidence scoring on every extracted metric.</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-[#A78BFA] shrink-0" />
                   <span>Human-in-the-loop verification drawer ensures accuracy before model inference.</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-[#A78BFA] shrink-0" />
                   <span>Private tenant storage encrypted with temporary signed download URLs.</span>
                 </li>
               </ul>
@@ -324,10 +324,10 @@ export default function Home() {
         </section>
 
         {/* SECTION 6: EXPLAINABLE AI */}
-        <section className="py-20 bg-[#070e1c] border-y border-[#14233a]">
+        <section className="py-20 bg-[#0C0A1D] border-y border-[#14233a]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-3xl mx-auto mb-16">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2">Explainable AI Architecture</h2>
+              <h2 className="text-xs font-bold uppercase tracking-wider text-[#A78BFA] mb-2">Explainable AI Architecture</h2>
               <p className="text-3xl font-extrabold text-white">SHAP Factor Attribution Across 7 Dimensions</p>
               <p className="text-slate-300 mt-4 text-sm sm:text-base">
                 Never accept an unexplained black-box output. Our explainability layer isolates specific drivers that pushed the assessment score up or down across standardized analytical dimensions.
@@ -335,7 +335,7 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="p-6 rounded-2xl bg-[#091426] border border-emerald-900/30">
+              <div className="p-6 rounded-2xl bg-[#1C1933] border border-emerald-900/30">
                 <h3 className="text-base font-bold text-emerald-400 mb-4 flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5" /> Top Positive Factors
                 </h3>
@@ -359,7 +359,7 @@ export default function Home() {
                 </ul>
               </div>
 
-              <div className="p-6 rounded-2xl bg-[#091426] border border-rose-900/30">
+              <div className="p-6 rounded-2xl bg-[#1C1933] border border-rose-900/30">
                 <h3 className="text-base font-bold text-rose-400 mb-4 flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5" /> Top Negative Factors
                 </h3>
@@ -389,7 +389,7 @@ export default function Home() {
         {/* SECTION 7: ANALYST REVIEW WORKFLOW */}
         <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2">Human In The Loop</h2>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-[#A78BFA] mb-2">Human In The Loop</h2>
             <p className="text-3xl font-extrabold text-white">
               AI As Decision Support — Never Autonomous Authority
             </p>
@@ -407,7 +407,7 @@ export default function Home() {
               { step: "05", title: "Committee Sign-Off", desc: "Official human authorization: Approved, Rejected, or Needs Info" }
             ].map((item, idx) => (
               <div key={idx} className="p-5 rounded-xl bg-[#0b162a] border border-[#172c47] text-center flex flex-col items-center">
-                <div className="w-8 h-8 rounded-full bg-cyan-500/10 border border-cyan-500/40 text-cyan-400 text-xs font-bold flex items-center justify-center mb-3 font-mono">
+                <div className="w-8 h-8 rounded-full bg-[#8B5CF6]/10 border border-[#8B5CF6]/40 text-[#A78BFA] text-xs font-bold flex items-center justify-center mb-3 font-mono">
                   {item.step}
                 </div>
                 <h4 className="text-sm font-bold text-white mb-1">{item.title}</h4>
@@ -418,7 +418,7 @@ export default function Home() {
         </section>
 
         {/* SECTION 8: WHAT-IF SIMULATION */}
-        <section className="py-20 bg-[#070e1c] border-y border-[#14233a]">
+        <section className="py-20 bg-[#0C0A1D] border-y border-[#14233a]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
               <div className="lg:col-span-6">
@@ -433,15 +433,15 @@ export default function Home() {
                 </p>
                 <div className="space-y-3 text-sm text-slate-300">
                   <p className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-[#A78BFA] shrink-0" />
                     <span>Hypothetical scenario results do not alter official recorded assessments.</span>
                   </p>
                   <p className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-[#A78BFA] shrink-0" />
                     <span>Calculates real-time Default Probability delta (+/– percentage points).</span>
                   </p>
                   <p className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-[#A78BFA] shrink-0" />
                     <span>Disclaimer: Scenario results are hypothetical and do not guarantee future outcomes.</span>
                   </p>
                 </div>
@@ -453,10 +453,10 @@ export default function Home() {
                   <div>
                     <div className="flex justify-between text-xs text-slate-300 mb-1">
                       <span>Annual Revenue Growth (+25%):</span>
-                      <span className="text-cyan-400 font-semibold">$3,000,000</span>
+                      <span className="text-[#A78BFA] font-semibold">$3,000,000</span>
                     </div>
                     <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                      <div className="bg-cyan-500 h-full w-4/5" />
+                      <div className="bg-[#8B5CF6] h-full w-4/5" />
                     </div>
                   </div>
                   <div>
@@ -481,13 +481,13 @@ export default function Home() {
         {/* SECTION 9: SECURITY */}
         <section id="security" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2">Enterprise Trust</h2>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-[#A78BFA] mb-2">Enterprise Trust</h2>
             <p className="text-3xl font-extrabold text-white">Hardened Architecture & Strict Isolation</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="p-6 rounded-xl bg-[#0c182b] border border-[#172c47]">
-              <ShieldCheck className="w-8 h-8 text-cyan-400 mb-4" />
+              <ShieldCheck className="w-8 h-8 text-[#A78BFA] mb-4" />
               <h3 className="text-lg font-bold text-white mb-2">Firebase Authentication</h3>
               <p className="text-sm text-slate-300 leading-relaxed">
                 Secure JWT verification with Google and email providers. Tokens strictly verified by backend FastAPI dependencies with test authentication disabled in production.
@@ -511,13 +511,13 @@ export default function Home() {
         </section>
 
         {/* SECTION 10: RESPONSIBLE AI */}
-        <section className="py-20 bg-[#070e1c] border-t border-[#14233a]">
+        <section className="py-20 bg-[#0C0A1D] border-t border-[#14233a]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="max-w-4xl mx-auto p-8 rounded-3xl bg-[#09152b] border border-cyan-500/30 text-center space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-cyan-950/70 border border-cyan-500/30 flex items-center justify-center mx-auto text-cyan-400">
+            <div className="max-w-4xl mx-auto p-8 rounded-3xl bg-[#09152b] border border-[#8B5CF6]/30 text-center space-y-4">
+              <div className="w-12 h-12 rounded-xl bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 flex items-center justify-center mx-auto text-[#A78BFA]">
                 <Scale className="w-6 h-6" />
               </div>
-              <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">Institutional Governance</h2>
+              <h2 className="text-xs font-bold uppercase tracking-wider text-[#A78BFA]">Institutional Governance</h2>
               <p className="text-2xl sm:text-3xl font-extrabold text-white">
                 Responsible AI & Decision-Support Commitment
               </p>
@@ -545,7 +545,7 @@ export default function Home() {
         {/* SECTION 11: FAQ */}
         <section id="faq" className="py-20 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2">Got Questions?</h2>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-[#A78BFA] mb-2">Got Questions?</h2>
             <p className="text-3xl font-extrabold text-white">Frequently Asked Questions</p>
           </div>
 
@@ -570,7 +570,7 @@ export default function Home() {
             ].map((faq, i) => (
               <div key={i} className="p-6 rounded-xl bg-[#0c182b] border border-[#172c47]">
                 <h3 className="text-base font-bold text-white mb-2 flex items-center gap-2">
-                  <HelpCircle className="w-5 h-5 text-cyan-400 shrink-0" />
+                  <HelpCircle className="w-5 h-5 text-[#A78BFA] shrink-0" />
                   {faq.q}
                 </h3>
                 <p className="text-sm text-slate-300 leading-relaxed pl-7">{faq.a}</p>
@@ -580,7 +580,7 @@ export default function Home() {
         </section>
 
         {/* SECTION 12: FINAL CALL TO ACTION */}
-        <section className="py-20 bg-gradient-to-b from-[#091426] to-[#060b14] border-t border-[#14233a]">
+        <section className="py-20 bg-gradient-to-b from-[#1C1933] to-[#0C0A1D] border-t border-[#14233a]">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-6">
               Transform Your MSME Credit Risk Underwriting
@@ -611,34 +611,34 @@ export default function Home() {
       </main>
 
       {/* SECTION 13: FOOTER */}
-      <footer className="bg-[#040810] border-t border-[#101c2e] py-12 text-slate-400 text-xs">
+      <footer className="bg-[#0C0A1D] border-t border-[#1C1933] py-12 text-slate-400 text-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
             <div>
               <h4 className="font-bold text-white text-sm mb-3">Product</h4>
               <ul className="space-y-2">
-                <li><a href="/features" className="hover:text-cyan-400 transition-colors">Features</a></li>
-                <li><a href="/how-it-works" className="hover:text-cyan-400 transition-colors">How It Works</a></li>
-                <li><a href="/demo" className="hover:text-cyan-400 transition-colors">Interactive Demo</a></li>
-                <li><a href="/about" className="hover:text-cyan-400 transition-colors">About Us</a></li>
+                <li><a href="/features" className="hover:text-[#A78BFA] transition-colors">Features</a></li>
+                <li><a href="/how-it-works" className="hover:text-[#A78BFA] transition-colors">How It Works</a></li>
+                <li><a href="/demo" className="hover:text-[#A78BFA] transition-colors">Interactive Demo</a></li>
+                <li><a href="/about" className="hover:text-[#A78BFA] transition-colors">About Us</a></li>
               </ul>
             </div>
             <div>
               <h4 className="font-bold text-white text-sm mb-3">Security & Trust</h4>
               <ul className="space-y-2">
-                <li><a href="/security" className="hover:text-cyan-400 transition-colors">Security Architecture</a></li>
-                <li><a href="/responsible-ai" className="hover:text-cyan-400 transition-colors">Responsible AI</a></li>
-                <li><a href="/privacy" className="hover:text-cyan-400 transition-colors">Privacy Policy</a></li>
-                <li><a href="/terms" className="hover:text-cyan-400 transition-colors">Terms of Service</a></li>
+                <li><a href="/security" className="hover:text-[#A78BFA] transition-colors">Security Architecture</a></li>
+                <li><a href="/responsible-ai" className="hover:text-[#A78BFA] transition-colors">Responsible AI</a></li>
+                <li><a href="/privacy" className="hover:text-[#A78BFA] transition-colors">Privacy Policy</a></li>
+                <li><a href="/terms" className="hover:text-[#A78BFA] transition-colors">Terms of Service</a></li>
               </ul>
             </div>
             <div>
               <h4 className="font-bold text-white text-sm mb-3">Enterprise Portals</h4>
               <ul className="space-y-2">
-                <li><a href="/login" className="hover:text-cyan-400 transition-colors">Analyst Sign In</a></li>
-                <li><a href="/register" className="hover:text-cyan-400 transition-colors">Create Account</a></li>
-                <li><a href="/dashboard" className="hover:text-cyan-400 transition-colors">Borrower Portal</a></li>
-                <li><a href="/contact" className="hover:text-cyan-400 transition-colors">Contact Support</a></li>
+                <li><a href="/login" className="hover:text-[#A78BFA] transition-colors">Analyst Sign In</a></li>
+                <li><a href="/register" className="hover:text-[#A78BFA] transition-colors">Create Account</a></li>
+                <li><a href="/dashboard" className="hover:text-[#A78BFA] transition-colors">Borrower Portal</a></li>
+                <li><a href="/contact" className="hover:text-[#A78BFA] transition-colors">Contact Support</a></li>
               </ul>
             </div>
             <div>

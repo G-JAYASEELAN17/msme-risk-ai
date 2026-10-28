@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { onAuthStateChanged } from "firebase/auth";
 import {
   BrainCircuit,
   FileSpreadsheet,
@@ -40,15 +39,6 @@ export default function Prediction() {
     prediction?: PredictionResponse;
     inputs?: PredictionRequest;
   } | null;
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        navigate("/login");
-      }
-    });
-    return () => unsubscribe();
-  }, [navigate]);
 
   useEffect(() => {
     if (state?.prediction?.assessment_id) {
@@ -160,7 +150,7 @@ export default function Prediction() {
               <Button
                 variant="outline"
                 size="md"
-                icon={<Sliders className="w-4 h-4 text-cyan-400" />}
+                icon={<Sliders className="w-4 h-4 text-[#A78BFA]" />}
                 onClick={() => setShowSimulator(!showSimulator)}
               >
                 {showSimulator ? "Hide Simulator" : "What-If Simulator"}
@@ -195,7 +185,7 @@ export default function Prediction() {
 
         {/* Responsible AI Transparency Disclosure */}
         <div className="p-3.5 rounded-xl bg-blue-950/30 border border-blue-500/20 text-xs text-slate-300 flex items-start gap-3">
-          <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+          <ShieldCheck className="w-4 h-4 text-[#A78BFA] shrink-0 mt-0.5" />
           <p className="leading-relaxed">
             <b className="text-white">AI-Assisted Credit Risk Assessment:</b> This system provides AI-assisted credit
             risk decision support and does not autonomously approve or reject loans. Your AI-generated risk assessment
@@ -205,10 +195,10 @@ export default function Prediction() {
 
         {/* Counterfactual What-If Simulator Panel */}
         {showSimulator && (
-          <div className="animate-fade-in p-6 bg-slate-900/90 border border-cyan-500/30 rounded-3xl shadow-2xl space-y-4">
+          <div className="animate-fade-in p-6 bg-slate-900/90 border border-[#8B5CF6]/30 rounded-3xl shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2.5">
-                <Sliders className="w-5 h-5 text-cyan-400" />
+                <Sliders className="w-5 h-5 text-[#A78BFA]" />
                 <h3 className="text-lg font-bold text-white font-['Space_Grotesk']">
                   Interactive Counterfactual Simulation ({inputs.name})
                 </h3>
@@ -228,107 +218,107 @@ export default function Prediction() {
         )}
 
         {/* Primary Intelligence Metric Cards (4 Cards Grid) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {/* Card 1: Risk Score (0-100) */}
-          <Card className="p-5 flex flex-col justify-between relative overflow-hidden">
+          <Card className="p-4 flex flex-col justify-between relative overflow-hidden bg-[#1C1933] border-[#383154]">
             <div
-              className={`absolute top-0 inset-x-0 h-1.5 ${
+              className={`absolute top-0 inset-x-0 h-1 ${
                 isLow ? "bg-emerald-500" : isMed ? "bg-amber-500" : "bg-rose-500"
               }`}
             />
-            <div className="flex justify-between items-center text-xs text-slate-400">
-              <span className="font-semibold uppercase tracking-wider">Normalized Risk Score</span>
+            <div className="flex justify-between items-center text-xs text-slate-400 font-mono-numeric">
+              <span className="font-semibold uppercase tracking-wider text-[10px]">Credit Risk Score</span>
               <RiskBadge riskLevel={prediction.risk_level} size="sm" />
             </div>
-            <div className="my-3">
+            <div className="my-2.5">
               <div className="flex items-baseline gap-1">
-                <span className="text-5xl font-extrabold text-white font-['Space_Grotesk'] tracking-tight">
+                <span className="text-4xl font-bold text-white tracking-tight font-mono-numeric tabular-nums">
                   {riskScore}
                 </span>
-                <span className="text-xl font-bold text-slate-400">/ 100</span>
+                <span className="text-base font-normal text-slate-400 font-mono-numeric">/ 100</span>
               </div>
-              <div className="text-[11px] text-slate-400 mt-1">
-                Tier Band: {isLow ? "0–24 (Low)" : isMed ? "25–55 (Medium)" : "56–100 (High)"}
+              <div className="text-[10px] text-slate-400 mt-0.5 font-mono-numeric">
+                Band: {isLow ? "0–24 (Low)" : isMed ? "25–55 (Medium)" : "56–100 (High)"}
               </div>
             </div>
-            <div className="text-[11px] text-slate-400 border-t border-[#16273f] pt-2">
-              Standardized credit score index
+            <div className="text-[10px] text-slate-400 border-t border-[#383154] pt-2 font-mono-numeric">
+              Normalized risk evaluation index
             </div>
           </Card>
 
           {/* Card 2: Estimated Default Probability */}
-          <Card className="p-5 flex flex-col justify-between">
-            <div className="flex justify-between items-center text-xs text-slate-400">
-              <span className="font-semibold uppercase tracking-wider">Default Probability</span>
-              <Activity className="w-4 h-4 text-cyan-400" />
+          <Card className="p-4 flex flex-col justify-between bg-[#1C1933] border-[#383154]">
+            <div className="flex justify-between items-center text-xs text-slate-400 font-mono-numeric">
+              <span className="font-semibold uppercase tracking-wider text-[10px]">Default Probability</span>
+              <Activity className="w-3.5 h-3.5 text-[#A78BFA]" />
             </div>
-            <div className="my-3">
+            <div className="my-2.5">
               <div className="flex items-baseline gap-1">
-                <span className="text-5xl font-extrabold text-cyan-400 font-['Space_Grotesk'] tracking-tight">
+                <span className="text-4xl font-bold text-[#A78BFA] tracking-tight font-mono-numeric tabular-nums">
                   {prediction.default_probability.toFixed(1)}
                 </span>
-                <span className="text-2xl font-bold text-cyan-500">%</span>
+                <span className="text-lg font-semibold text-[#8B5CF6] font-mono-numeric">%</span>
               </div>
-              <div className="text-[11px] text-slate-400 mt-1">
-                Raw model default likelihood
+              <div className="text-[10px] text-slate-400 mt-0.5 font-mono-numeric">
+                Model-estimated default likelihood
               </div>
             </div>
-            <div className="text-[11px] text-slate-400 border-t border-[#16273f] pt-2">
-              Model: <b className="text-white">XGBoost v{modelVersion}</b>
+            <div className="text-[10px] text-slate-400 border-t border-[#383154] pt-2 font-mono-numeric">
+              Engine: <b className="text-slate-200">XGBoost v{modelVersion}</b>
             </div>
           </Card>
 
           {/* Card 3: Model Confidence Indicator */}
-          <Card className="p-5 flex flex-col justify-between">
-            <div className="flex justify-between items-center text-xs text-slate-400">
-              <span className="font-semibold uppercase tracking-wider">Model Confidence</span>
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+          <Card className="p-4 flex flex-col justify-between bg-[#1C1933] border-[#383154]">
+            <div className="flex justify-between items-center text-xs text-slate-400 font-mono-numeric">
+              <span className="font-semibold uppercase tracking-wider text-[10px]">Model Certainty</span>
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
             </div>
-            <div className="my-3">
+            <div className="my-2.5">
               <div className="flex items-baseline gap-1">
-                <span className="text-5xl font-extrabold text-white font-['Space_Grotesk'] tracking-tight">
+                <span className="text-4xl font-bold text-white tracking-tight font-mono-numeric tabular-nums">
                   {prediction.confidence.toFixed(1)}
                 </span>
-                <span className="text-2xl font-bold text-slate-400">%</span>
+                <span className="text-lg font-semibold text-slate-400 font-mono-numeric">%</span>
               </div>
-              <div className="text-[11px] text-slate-400 mt-1">
-                Model confidence indicator
+              <div className="text-[10px] text-slate-400 mt-0.5 font-mono-numeric">
+                Decision boundary distance
               </div>
             </div>
-            <div className="text-[11px] text-slate-400 border-t border-[#16273f] pt-2" title="Indicates boundary margin distance; not calibrated posterior probability">
-              Proximity certainty indicator
+            <div className="text-[10px] text-slate-400 border-t border-[#383154] pt-2 font-mono-numeric" title="Indicates boundary margin distance">
+              Statistical confidence metric
             </div>
           </Card>
 
           {/* Card 4: Data Quality Score */}
-          <Card className="p-5 flex flex-col justify-between">
-            <div className="flex justify-between items-center text-xs text-slate-400">
-              <span className="font-semibold uppercase tracking-wider">Data Quality Score</span>
+          <Card className="p-4 flex flex-col justify-between bg-[#1C1933] border-[#383154]">
+            <div className="flex justify-between items-center text-xs text-slate-400 font-mono-numeric">
+              <span className="font-semibold uppercase tracking-wider text-[10px]">Data Quality</span>
               <span
-                className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                className={`px-1.5 py-0.5 rounded text-[10px] font-mono-numeric font-medium ${
                   dataQualityScore >= 85
-                    ? "bg-emerald-950/60 text-emerald-400 border border-emerald-500/20"
+                    ? "bg-emerald-950/60 text-emerald-400 border border-emerald-500/25"
                     : dataQualityScore >= 65
-                    ? "bg-amber-950/60 text-amber-400 border border-amber-500/20"
-                    : "bg-rose-950/60 text-rose-400 border border-rose-500/20"
+                    ? "bg-amber-950/60 text-amber-400 border border-amber-500/25"
+                    : "bg-rose-950/60 text-rose-400 border border-rose-500/25"
                 }`}
               >
                 {dataQualityTier}
               </span>
             </div>
-            <div className="my-3">
+            <div className="my-2.5">
               <div className="flex items-baseline gap-1">
-                <span className="text-5xl font-extrabold text-emerald-400 font-['Space_Grotesk'] tracking-tight">
+                <span className="text-4xl font-bold text-emerald-400 tracking-tight font-mono-numeric tabular-nums">
                   {dataQualityScore}
                 </span>
-                <span className="text-xl font-bold text-slate-400">/ 100</span>
+                <span className="text-base font-normal text-slate-400 font-mono-numeric">/ 100</span>
               </div>
-              <div className="text-[11px] text-slate-400 mt-1">
-                Input source integrity & verification
+              <div className="text-[10px] text-slate-400 mt-0.5 font-mono-numeric">
+                Verification completeness baseline
               </div>
             </div>
-            <div className="text-[11px] text-slate-400 border-t border-[#16273f] pt-2">
-              Document & financial completeness
+            <div className="text-[10px] text-slate-400 border-t border-[#383154] pt-2 font-mono-numeric">
+              Financial document telemetry
             </div>
           </Card>
         </div>
@@ -339,7 +329,7 @@ export default function Prediction() {
           <Card className="lg:col-span-2 flex flex-col justify-between">
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Scale className="w-5 h-5 text-cyan-400" />
+                <Scale className="w-5 h-5 text-[#A78BFA]" />
                 <div>
                   <CardTitle>Underwriting Recommendation</CardTitle>
                   <CardDescription>
@@ -368,8 +358,8 @@ export default function Prediction() {
 
               {/* Deterministic AI Underwriting Summary */}
               {prediction.analyst_summary && (
-                <div className="p-4 rounded-xl bg-[#09152b] border border-[#182f50] space-y-1.5">
-                  <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wider">
+                <div className="p-4 rounded-xl bg-[#0C0A1D] border border-[#383154] space-y-1.5">
+                  <div className="flex items-center gap-2 text-[#A78BFA] text-xs font-bold uppercase tracking-wider">
                     <Sparkles className="w-4 h-4" />
                     <span>Deterministic AI Underwriting Summary</span>
                   </div>
@@ -381,19 +371,19 @@ export default function Prediction() {
 
               {/* Core Financial Snapshot */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1">
-                <div className="p-3 rounded-lg bg-[#0a1424] border border-[#16273f]">
+                <div className="p-3 rounded-lg bg-[#1C1933] border border-[#383154]">
                   <span className="text-slate-400 block mb-0.5">Industry</span>
                   <span className="font-semibold text-white capitalize truncate block">{inputs.industry}</span>
                 </div>
-                <div className="p-3 rounded-lg bg-[#0a1424] border border-[#16273f]">
+                <div className="p-3 rounded-lg bg-[#1C1933] border border-[#383154]">
                   <span className="text-slate-400 block mb-0.5">Annual Revenue</span>
                   <span className="font-semibold text-white">${inputs.annual_revenue.toLocaleString()}</span>
                 </div>
-                <div className="p-3 rounded-lg bg-[#0a1424] border border-[#16273f]">
+                <div className="p-3 rounded-lg bg-[#1C1933] border border-[#383154]">
                   <span className="text-slate-400 block mb-0.5">Existing Debt</span>
                   <span className="font-semibold text-white">${inputs.existing_debt.toLocaleString()}</span>
                 </div>
-                <div className="p-3 rounded-lg bg-[#0a1424] border border-[#16273f]">
+                <div className="p-3 rounded-lg bg-[#1C1933] border border-[#383154]">
                   <span className="text-slate-400 block mb-0.5">Monthly Cash Flow</span>
                   <span className="font-semibold text-white">${inputs.monthly_cash_flow.toLocaleString()}</span>
                 </div>
@@ -405,7 +395,7 @@ export default function Prediction() {
           <Card className="flex flex-col justify-between">
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Activity className="w-5 h-5 text-cyan-400" />
+                <Activity className="w-5 h-5 text-[#A78BFA]" />
                 <div>
                   <CardTitle>Historical Risk Trajectory</CardTitle>
                   <CardDescription>Multi-assessment longitudinal analysis</CardDescription>
@@ -416,7 +406,7 @@ export default function Prediction() {
             <CardContent className="space-y-4">
               {riskTrend ? (
                 <div className="space-y-3">
-                  <div className="p-4 rounded-xl bg-[#09152b] border border-[#1a3359] text-center">
+                  <div className="p-4 rounded-xl bg-[#0C0A1D] border border-[#383154] text-center">
                     <span className="text-xs text-slate-400 block mb-1">Observed Trend</span>
                     <div
                       className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
@@ -438,7 +428,7 @@ export default function Prediction() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div className="p-3 bg-[#0a1424] border border-[#16273f] rounded-lg text-center">
+                    <div className="p-3 bg-[#1C1933] border border-[#383154] rounded-lg text-center">
                       <span className="text-slate-400 block mb-0.5">Previous Prob.</span>
                       <span className="font-mono font-bold text-white">
                         {riskTrend.previous_probability !== null && riskTrend.previous_probability !== undefined
@@ -446,28 +436,28 @@ export default function Prediction() {
                           : "First Run"}
                       </span>
                     </div>
-                    <div className="p-3 bg-[#0a1424] border border-[#16273f] rounded-lg text-center">
+                    <div className="p-3 bg-[#1C1933] border border-[#383154] rounded-lg text-center">
                       <span className="text-slate-400 block mb-0.5">Current Prob.</span>
-                      <span className="font-mono font-bold text-cyan-400">
+                      <span className="font-mono font-bold text-[#A78BFA]">
                         {riskTrend.current_probability.toFixed(1)}%
                       </span>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="p-6 text-center text-xs text-slate-400 bg-[#091322] border border-[#16273f] rounded-xl">
+                <div className="p-6 text-center text-xs text-slate-400 bg-[#0C0A1D] border border-[#383154] rounded-xl">
                   First recorded credit assessment for this business. Trend requires multiple historical assessments.
                 </div>
               )}
 
-              <div className="p-3 rounded-lg bg-[#081220] border border-[#16273f] text-xs text-slate-400">
+              <div className="p-3 rounded-lg bg-[#0C0A1D] border border-[#383154] text-xs text-slate-400">
                 <div className="flex justify-between py-1">
                   <span>Model Engine:</span>
                   <span className="font-mono text-slate-200">XGBoost Classifier</span>
                 </div>
                 <div className="flex justify-between py-1">
                   <span>Model Version:</span>
-                  <span className="font-mono text-cyan-400">v{modelVersion}</span>
+                  <span className="font-mono text-[#A78BFA]">v{modelVersion}</span>
                 </div>
               </div>
             </CardContent>
@@ -477,14 +467,26 @@ export default function Prediction() {
         {/* Explainable AI: 7-Category Factor Breakdown */}
         <Card>
           <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <BrainCircuit className="w-5 h-5 text-cyan-400" />
-                <div>
-                  <CardTitle>Explainable AI — Categorized Factor Breakdown</CardTitle>
-                  <CardDescription>
-                    SHAP TreeExplainer feature attributions grouped into 7 analytical dimensions
-                  </CardDescription>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <BrainCircuit className="w-5 h-5 text-[#A78BFA]" />
+                  <div>
+                    <CardTitle>Explainable AI — Categorized Factor Breakdown</CardTitle>
+                    <CardDescription>
+                      SHAP TreeExplainer feature attributions grouped into 7 analytical dimensions
+                    </CardDescription>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => navigate(`/explainability/${prediction.assessment_id}`)}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-semibold shadow-md shadow-[#8B5CF6]/25 transition"
+                  >
+                    <BrainCircuit className="w-3.5 h-3.5" />
+                    Deep TreeSHAP & Counterfactuals
+                  </button>
                 </div>
               </div>
 
@@ -495,8 +497,8 @@ export default function Prediction() {
                     onClick={() => setSelectedCategory("ALL")}
                     className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
                       selectedCategory === "ALL"
-                        ? "bg-cyan-500 text-black font-semibold"
-                        : "bg-[#091427] text-slate-300 hover:bg-[#11233e] border border-[#16273f]"
+                        ? "bg-[#8B5CF6] text-black font-semibold"
+                        : "bg-[#0C0A1D] text-slate-300 hover:bg-[#252141] border border-[#383154]"
                     }`}
                   >
                     All Dimensions
@@ -507,8 +509,8 @@ export default function Prediction() {
                       onClick={() => setSelectedCategory(cat)}
                       className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
                         selectedCategory === cat
-                          ? "bg-cyan-500 text-black font-semibold"
-                          : "bg-[#091427] text-slate-300 hover:bg-[#11233e] border border-[#16273f]"
+                          ? "bg-[#8B5CF6] text-black font-semibold"
+                          : "bg-[#0C0A1D] text-slate-300 hover:bg-[#252141] border border-[#383154]"
                       }`}
                     >
                       {cat}
@@ -525,7 +527,7 @@ export default function Prediction() {
                 {displayedFactors.map((f, i) => (
                   <div
                     key={i}
-                    className="p-3.5 rounded-xl bg-[#091322] border border-[#16273f] flex flex-col justify-between gap-2"
+                    className="p-3.5 rounded-xl bg-[#0C0A1D] border border-[#383154] flex flex-col justify-between gap-2"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
@@ -551,9 +553,9 @@ export default function Prediction() {
                       {f.explanation}
                     </p>
 
-                    <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-[#132338] pt-1.5 mt-1 font-mono">
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-[#252141] pt-1.5 mt-1 font-mono">
                       <span>Value: <b className="text-slate-200">{String(f.value)}</b></span>
-                      <span>Impact: <b className="text-cyan-400 capitalize">{f.impact_magnitude}</b></span>
+                      <span>Impact: <b className="text-[#A78BFA] capitalize">{f.impact_magnitude}</b></span>
                     </div>
                   </div>
                 ))}
@@ -563,15 +565,15 @@ export default function Prediction() {
                 {prediction.top_factors.map((factor, index) => (
                   <div
                     key={factor}
-                    className="p-3.5 rounded-xl bg-[#091322] border border-[#16273f] flex items-center justify-between"
+                    className="p-3.5 rounded-xl bg-[#0C0A1D] border border-[#383154] flex items-center justify-between"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="w-6 h-6 rounded-md bg-[#13233c] text-cyan-400 text-xs font-bold flex items-center justify-center">
+                      <span className="w-6 h-6 rounded-md bg-[#252141] text-[#A78BFA] text-xs font-bold flex items-center justify-center">
                         0{index + 1}
                       </span>
                       <span className="text-xs sm:text-sm font-medium text-slate-100">{factor}</span>
                     </div>
-                    <span className="text-xs text-cyan-400 font-semibold">High Impact</span>
+                    <span className="text-xs text-[#A78BFA] font-semibold">High Impact</span>
                   </div>
                 ))}
               </div>
@@ -583,7 +585,7 @@ export default function Prediction() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Top Positive Signals */}
           <Card>
-            <CardHeader className="border-b border-[#16273f]">
+            <CardHeader className="border-b border-[#383154]">
               <div className="flex items-center gap-2 text-emerald-400">
                 <TrendingUp className="w-5 h-5" />
                 <CardTitle className="text-emerald-400">Top Positive Credit Factors</CardTitle>
@@ -609,7 +611,7 @@ export default function Prediction() {
 
           {/* Top Risk Factors */}
           <Card>
-            <CardHeader className="border-b border-[#16273f]">
+            <CardHeader className="border-b border-[#383154]">
               <div className="flex items-center gap-2 text-rose-400">
                 <TrendingDown className="w-5 h-5" />
                 <CardTitle className="text-rose-400">Top Negative Risk Factors</CardTitle>
@@ -635,7 +637,7 @@ export default function Prediction() {
         </div>
 
         {/* Regulatory & System Disclaimers */}
-        <div className="p-4 rounded-xl bg-[#081120] border border-[#16273f] text-xs text-slate-400 leading-relaxed space-y-2">
+        <div className="p-4 rounded-xl bg-[#0C0A1D] border border-[#383154] text-xs text-slate-400 leading-relaxed space-y-2">
           <div className="flex items-center gap-2 text-amber-400 font-bold uppercase tracking-wider text-[11px]">
             <ShieldCheck className="w-4 h-4 shrink-0" />
             <span>AI-Assisted Credit Risk Assessment — Decision Support Notice</span>

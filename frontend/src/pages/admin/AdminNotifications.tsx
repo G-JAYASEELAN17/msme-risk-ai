@@ -145,14 +145,14 @@ export default function AdminNotifications() {
       case "workload":
         return <Users className="w-4 h-4 text-indigo-400" />;
       case "model":
-        return <Bot className="w-4 h-4 text-cyan-400" />;
+        return <Bot className="w-4 h-4 text-[#A78BFA]" />;
       case "security":
         return <Shield className="w-4 h-4 text-purple-400" />;
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-[#030712] text-slate-100">
+    <div className="flex min-h-screen bg-[#0C0A1D] text-slate-100">
       <Sidebar active="Notifications" />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
@@ -167,7 +167,7 @@ export default function AdminNotifications() {
 
         <main className="p-4 sm:p-6 lg:p-8 max-w-4xl w-full mx-auto space-y-6">
           {/* Controls Bar */}
-          <div className="flex items-center justify-between p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b]">
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-[#0C0A1D] border border-[#383154]">
             <div className="flex items-center gap-2">
               {(["all", "warning", "info"] as const).map((sev) => (
                 <button
@@ -175,8 +175,8 @@ export default function AdminNotifications() {
                   onClick={() => setSeverityFilter(sev)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold capitalize transition ${
                     severityFilter === sev
-                      ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
-                      : "bg-[#0d1c33] text-slate-400 hover:text-white border border-[#1d3559]"
+                      ? "bg-[#8B5CF6]/20 text-[#C4B5FD] border border-[#8B5CF6]/40"
+                      : "bg-[#1C1933] text-slate-400 hover:text-white border border-[#1d3559]"
                   }`}
                 >
                   {sev === "all" ? "All Alerts" : sev}
@@ -187,13 +187,13 @@ export default function AdminNotifications() {
             <div className="flex items-center gap-2">
               <button
                 onClick={handleMarkAllRead}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#0d1c33] border border-[#1d3559] text-slate-300 hover:text-white transition"
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#1C1933] border border-[#1d3559] text-slate-300 hover:text-white transition"
               >
                 Mark All Read
               </button>
               <button
                 onClick={loadNotifications}
-                className="p-1.5 rounded-xl bg-[#0d1c33] border border-[#1d3559] text-slate-300 hover:text-white transition"
+                className="p-1.5 rounded-xl bg-[#1C1933] border border-[#1d3559] text-slate-300 hover:text-white transition"
                 title="Refresh alerts"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -225,8 +225,8 @@ export default function AdminNotifications() {
                   key={n.id}
                   className={`p-4 rounded-2xl border transition flex items-start justify-between gap-4 ${
                     n.read
-                      ? "bg-[#081120]/60 border-[#162742] opacity-75"
-                      : "bg-[#081120] border-[#1a2d4b] shadow-md"
+                      ? "bg-[#0C0A1D]/60 border-[#383154] opacity-75"
+                      : "bg-[#0C0A1D] border-[#383154] shadow-md"
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -236,7 +236,7 @@ export default function AdminNotifications() {
                           ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
                           : n.severity === "critical"
                           ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
-                          : "bg-cyan-500/10 border-cyan-500/30 text-cyan-400"
+                          : "bg-[#8B5CF6]/10 border-[#8B5CF6]/30 text-[#A78BFA]"
                       }`}
                     >
                       {getIcon(n.type)}
@@ -245,7 +245,7 @@ export default function AdminNotifications() {
                       <div className="flex items-center gap-2">
                         <h4 className="text-sm font-bold text-white">{n.title}</h4>
                         {!n.read && (
-                          <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/50" />
+                          <span className="w-2 h-2 rounded-full bg-[#8B5CF6] shadow-sm shadow-[#8B5CF6]/50" />
                         )}
                       </div>
                       <p className="text-xs text-slate-300 mt-1 leading-relaxed">

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from typing import List, Optional
 
 from ..database.database import get_db
@@ -18,45 +19,77 @@ def get_businesses(
 ):
     """
     Returns all businesses owned by current authenticated user, or all portfolio businesses if requested by an Analyst or Admin.
+    Optimized with a single roundtrip CTE window query, eliminating the 40+ database query waterfall.
     """
     user_role = (current_user.role or "user").lower()
-    query = db.query(models.Business)
-    if not (all_users and user_role in ["admin", "analyst"]):
-        query = query.filter(models.Business.user_id == current_user.uid)
-    businesses = query.order_by(models.Business.created_at.desc()).all()
+    is_portfolio_view = bool(all_users and user_role in ["admin", "analyst"])
 
-    responses = []
-    for b in businesses:
-        assessments = db.query(models.Assessment).filter(
-            models.Assessment.business_id == b.id
-        ).order_by(models.Assessment.created_at.desc()).all()
+    sql = text("""
+        WITH ranked_assessments AS (
+            SELECT 
+                a.id as assessment_id,
+                a.business_id,
+                p.risk_level,
+                p.default_probability,
+                ROW_NUMBER() OVER (
+                    PARTITION BY a.business_id 
+                    ORDER BY a.created_at DESC, a.id DESC
+                ) as rn
+            FROM assessments a
+            LEFT JOIN predictions p ON p.assessment_id = a.id
+        ),
+        assessment_counts AS (
+            SELECT 
+                business_id, 
+                COUNT(*) as total_count
+            FROM assessments
+            GROUP BY business_id
+        )
+        SELECT 
+            b.id,
+            b.name,
+            b.industry,
+            b.location,
+            b.description,
+            b.age,
+            b.employees,
+            b.created_at,
+            b.updated_at,
+            COALESCE(ac.total_count, 0) as total_assessments,
+            ra.risk_level as latest_risk_level,
+            ra.default_probability as latest_default_probability
+        FROM businesses b
+        LEFT JOIN assessment_counts ac ON ac.business_id = b.id
+        LEFT JOIN ranked_assessments ra ON ra.business_id = b.id AND ra.rn = 1
+        WHERE (:filter_user = 0 OR b.user_id = :uid)
+        ORDER BY b.created_at DESC
+    """)
 
-        total = len(assessments)
-        latest_risk = None
-        latest_prob = None
+    params = {
+        "filter_user": 0 if is_portfolio_view else 1,
+        "uid": current_user.uid
+    }
 
-        if total > 0 and assessments[0].prediction:
-            latest_risk = assessments[0].prediction.risk_level
-            latest_default_probability = assessments[0].prediction.default_probability
-        else:
-            latest_default_probability = None
+    rows = db.execute(sql, params).mappings().all()
 
-        responses.append(BusinessResponse(
-            id=b.id,
-            name=b.name,
-            industry=b.industry,
-            location=b.location,
-            description=b.description,
-            age=b.age,
-            employees=b.employees,
-            created_at=b.created_at,
-            updated_at=b.updated_at,
-            total_assessments=total,
-            latest_risk_level=latest_risk,
-            latest_default_probability=latest_default_probability
-        ))
+    return [
+        BusinessResponse(
+            id=r["id"],
+            name=r["name"],
+            industry=r["industry"],
+            location=r["location"],
+            description=r["description"],
+            age=r["age"],
+            employees=r["employees"],
+            created_at=r["created_at"],
+            updated_at=r["updated_at"],
+            total_assessments=r["total_assessments"],
+            latest_risk_level=r["latest_risk_level"],
+            latest_default_probability=r["latest_default_probability"]
+        )
+        for r in rows
+    ]
 
-    return responses
 
 @router.post("", response_model=BusinessResponse, status_code=status.HTTP_201_CREATED)
 def create_business(

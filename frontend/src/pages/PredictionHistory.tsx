@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { onAuthStateChanged } from "firebase/auth";
 import {
   History,
   Building2,
@@ -19,7 +18,6 @@ import {
   X,
   FileText,
 } from "lucide-react";
-import { auth } from "../services/firebase";
 import { api, PredictionHistoryItem, PredictionExplanation, RiskTrendResult } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import PageHeader from "../components/PageHeader";
@@ -27,41 +25,32 @@ import Card, { CardHeader, CardTitle, CardDescription, CardContent } from "../co
 import { RiskBadge } from "../components/ui/Badge";
 import Button from "../components/ui/Button";
 import LoadingSpinner from "../components/LoadingSpinner";
+import { TableSkeleton } from "../components/ui/Skeleton";
 import EmptyState from "../components/ui/EmptyState";
+import { useAuthRole } from "../context/AuthRoleContext";
+import { useQuery } from "@tanstack/react-query";
 
 export default function PredictionHistory() {
   const navigate = useNavigate();
-  const [predictions, setPredictions] = useState<PredictionHistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuthRole();
+
+  const {
+    data: predictions = [],
+    isLoading: loading,
+    refetch: loadHistory,
+  } = useQuery<PredictionHistoryItem[]>({
+    queryKey: ["prediction-history"],
+    queryFn: () => api.getPredictionHistory({ limit: 100 }),
+    staleTime: 30 * 1000,
+    enabled: !!user,
+  });
+
   const [searchQuery, setSearchQuery] = useState("");
   const [riskFilter, setRiskFilter] = useState("ALL");
   const [selectedPrediction, setSelectedPrediction] = useState<PredictionHistoryItem | null>(null);
   const [explanation, setExplanation] = useState<PredictionExplanation | null>(null);
   const [riskTrend, setRiskTrend] = useState<RiskTrendResult | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        navigate("/login");
-      } else {
-        loadHistory();
-      }
-    });
-    return () => unsubscribe();
-  }, [navigate]);
-
-  const loadHistory = async () => {
-    try {
-      setLoading(true);
-      const data = await api.getPredictionHistory({ limit: 100 });
-      setPredictions(data);
-    } catch (err) {
-      console.error("Failed to load prediction history:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleOpenDetails = async (item: PredictionHistoryItem) => {
     setSelectedPrediction(item);
@@ -112,7 +101,7 @@ export default function PredictionHistory() {
               variant="outline"
               size="md"
               icon={<RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />}
-              onClick={loadHistory}
+              onClick={() => { void loadHistory(); }}
             >
               Refresh History
             </Button>
@@ -128,7 +117,7 @@ export default function PredictionHistory() {
               placeholder="Filter by business name, industry, or ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-[#091427] border border-[#16273f] rounded-xl text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500 transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 bg-[#0C0A1D] border border-[#383154] rounded-xl text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:border-[#8B5CF6] transition-colors"
             />
           </div>
 
@@ -137,7 +126,7 @@ export default function PredictionHistory() {
             <select
               value={riskFilter}
               onChange={(e) => setRiskFilter(e.target.value)}
-              className="bg-[#091427] border border-[#16273f] text-slate-200 text-xs sm:text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-cyan-500"
+              className="bg-[#0C0A1D] border border-[#383154] text-slate-200 text-xs sm:text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-[#8B5CF6]"
             >
               <option value="ALL">All Risk Tiers</option>
               <option value="LOW">Low Risk</option>
@@ -150,13 +139,11 @@ export default function PredictionHistory() {
         {/* Prediction Table */}
         <Card className="overflow-hidden">
           {loading ? (
-            <div className="py-20 flex justify-center">
-              <LoadingSpinner text="Loading prediction history archive..." />
-            </div>
+            <TableSkeleton rows={6} columns={8} />
           ) : filteredPredictions.length === 0 ? (
             <div className="p-8">
               <EmptyState
-                icon={<History className="w-8 h-8 text-cyan-400" />}
+                icon={<History className="w-8 h-8 text-[#A78BFA]" />}
                 title="No Historical Predictions Found"
                 description={
                   searchQuery || riskFilter !== "ALL"
@@ -172,7 +159,7 @@ export default function PredictionHistory() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs sm:text-sm">
                 <thead>
-                  <tr className="border-b border-[#16273f] bg-[#091322] text-slate-400 text-[11px] uppercase tracking-wider font-semibold">
+                  <tr className="border-b border-[#383154] bg-[#0C0A1D] text-slate-400 text-[11px] uppercase tracking-wider font-semibold">
                     <th className="py-3.5 px-4">Prediction ID</th>
                     <th className="py-3.5 px-4">Business & Industry</th>
                     <th className="py-3.5 px-4">Evaluation Date</th>
@@ -184,14 +171,14 @@ export default function PredictionHistory() {
                     <th className="py-3.5 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#132238] text-slate-300">
+                <tbody className="divide-y divide-[#252141] text-slate-300">
                   {filteredPredictions.map((item) => (
                     <tr
                       key={item.prediction_id}
-                      className="hover:bg-[#0c1930] transition-colors cursor-pointer"
+                      className="hover:bg-[#1C1933] transition-colors cursor-pointer"
                       onClick={() => handleOpenDetails(item)}
                     >
-                      <td className="py-4 px-4 font-mono font-medium text-cyan-400">
+                      <td className="py-4 px-4 font-mono font-medium text-[#A78BFA]">
                         #{item.prediction_id}
                       </td>
                       <td className="py-4 px-4">
@@ -242,7 +229,7 @@ export default function PredictionHistory() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          icon={<ArrowRight className="w-3.5 h-3.5 text-cyan-400" />}
+                          icon={<ArrowRight className="w-3.5 h-3.5 text-[#A78BFA]" />}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleOpenDetails(item);
@@ -262,10 +249,10 @@ export default function PredictionHistory() {
         {/* Prediction Detail Modal */}
         {selectedPrediction && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-            <div className="bg-[#0b172a] border border-[#1e3557] rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 sm:p-8 space-y-6">
-              <div className="flex items-center justify-between pb-4 border-b border-[#16273f]">
+            <div className="bg-[#1C1933] border border-[#383154] rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 sm:p-8 space-y-6">
+              <div className="flex items-center justify-between pb-4 border-b border-[#383154]">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-cyan-950/50 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                  <div className="w-10 h-10 rounded-xl bg-[#8B5CF6]/15 border border-[#8B5CF6]/30 flex items-center justify-center text-[#A78BFA]">
                     <BrainCircuit className="w-5 h-5" />
                   </div>
                   <div>
@@ -294,13 +281,13 @@ export default function PredictionHistory() {
                 <div className="space-y-6">
                   {/* Top Stats Banner */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                    <div className="p-3.5 bg-[#091322] border border-[#16273f] rounded-xl">
+                    <div className="p-3.5 bg-[#0C0A1D] border border-[#383154] rounded-xl">
                       <span className="text-[11px] text-slate-400 uppercase tracking-wider block mb-1">
                         Risk Tier
                       </span>
                       <RiskBadge riskLevel={selectedPrediction.risk_level} size="md" />
                     </div>
-                    <div className="p-3.5 bg-[#091322] border border-[#16273f] rounded-xl">
+                    <div className="p-3.5 bg-[#0C0A1D] border border-[#383154] rounded-xl">
                       <span className="text-[11px] text-slate-400 uppercase tracking-wider block mb-1">
                         Default Prob.
                       </span>
@@ -308,15 +295,15 @@ export default function PredictionHistory() {
                         {selectedPrediction.default_probability.toFixed(1)}%
                       </span>
                     </div>
-                    <div className="p-3.5 bg-[#091322] border border-[#16273f] rounded-xl">
+                    <div className="p-3.5 bg-[#0C0A1D] border border-[#383154] rounded-xl">
                       <span className="text-[11px] text-slate-400 uppercase tracking-wider block mb-1">
                         Risk Score
                       </span>
-                      <span className="text-xl font-bold font-['Space_Grotesk'] text-cyan-400">
+                      <span className="text-xl font-bold font-['Space_Grotesk'] text-[#A78BFA]">
                         {Math.round(selectedPrediction.risk_score)} / 100
                       </span>
                     </div>
-                    <div className="p-3.5 bg-[#091322] border border-[#16273f] rounded-xl">
+                    <div className="p-3.5 bg-[#0C0A1D] border border-[#383154] rounded-xl">
                       <span className="text-[11px] text-slate-400 uppercase tracking-wider block mb-1">
                         Data Quality
                       </span>
@@ -328,9 +315,9 @@ export default function PredictionHistory() {
 
                   {/* Risk Trajectory Banner if available */}
                   {riskTrend && (
-                    <div className="p-4 rounded-xl bg-[#09152b] border border-[#1a3359] flex items-center justify-between">
+                    <div className="p-4 rounded-xl bg-[#0C0A1D] border border-[#383154] flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <Activity className="w-5 h-5 text-cyan-400 shrink-0" />
+                        <Activity className="w-5 h-5 text-[#A78BFA] shrink-0" />
                         <div>
                           <h4 className="text-xs font-bold text-white uppercase tracking-wider">
                             Multi-Assessment Risk Trajectory
@@ -361,8 +348,8 @@ export default function PredictionHistory() {
 
                   {/* Deterministic AI Underwriting Summary */}
                   {explanation?.analyst_summary && (
-                    <div className="p-4 rounded-xl bg-[#081222] border border-[#16273f] space-y-1.5">
-                      <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wider">
+                    <div className="p-4 rounded-xl bg-[#0C0A1D] border border-[#383154] space-y-1.5">
+                      <div className="flex items-center gap-2 text-[#A78BFA] text-xs font-bold uppercase tracking-wider">
                         <Sparkles className="w-4 h-4" />
                         <span>Analyst AI Underwriting Summary</span>
                       </div>
@@ -382,7 +369,7 @@ export default function PredictionHistory() {
                         {explanation.factor_breakdown.all_factors?.map((f, i) => (
                           <div
                             key={i}
-                            className="p-3 bg-[#091322] border border-[#16273f] rounded-xl text-xs space-y-1"
+                            className="p-3 bg-[#0C0A1D] border border-[#383154] rounded-xl text-xs space-y-1"
                           >
                             <div className="flex items-center justify-between">
                               <span className="font-semibold text-white">{f.display_name}</span>
@@ -407,8 +394,8 @@ export default function PredictionHistory() {
                   )}
 
                   {/* Responsible AI Disclaimer */}
-                  <div className="p-3.5 rounded-xl bg-[#08101e] border border-[#14233a] text-[11px] text-slate-400 flex items-start gap-2.5">
-                    <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                  <div className="p-3.5 rounded-xl bg-[#0C0A1D] border border-[#383154] text-[11px] text-slate-400 flex items-start gap-2.5">
+                    <ShieldCheck className="w-4 h-4 text-[#A78BFA] shrink-0 mt-0.5" />
                     <span>
                       <b>Decision Support Notice:</b> {explanation?.disclaimer || "This system provides AI-assisted credit risk decision support and does not autonomously approve or reject loans."}
                     </span>

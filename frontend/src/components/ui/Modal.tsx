@@ -48,7 +48,7 @@ export const Modal: React.FC<ModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-[#0C0A1D]/80 backdrop-blur-md transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -58,23 +58,23 @@ export const Modal: React.FC<ModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? "modal-title" : undefined}
-        className={`relative w-full ${maxWidthStyles[maxWidth]} rounded-2xl bg-[#0d182b] border border-[#223859] p-6 shadow-2xl shadow-black/80 z-10 animate-in zoom-in-95 duration-150`}
+        className={`relative w-full ${maxWidthStyles[maxWidth]} rounded-2xl bg-[#1C1933] border border-[#383154] p-6 shadow-2xl shadow-[#0C0A1D]/90 z-10 animate-in zoom-in-95 duration-150`}
       >
-        <div className="flex items-start justify-between pb-3 border-b border-[#1b2f4d] mb-4">
+        <div className="flex items-start justify-between pb-3 border-b border-[#383154] mb-4">
           <div>
             {title && (
-              <h2 id="modal-title" className="text-lg font-semibold text-white">
+              <h2 id="modal-title" className="text-lg font-bold text-[#F5F3FF] font-['Space_Grotesk']">
                 {title}
               </h2>
             )}
             {description && (
-              <p className="text-xs text-slate-400 mt-1">{description}</p>
+              <p className="text-xs text-[#B7B1D1] mt-1">{description}</p>
             )}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="rounded-lg p-1.5 text-[#B7B1D1] hover:text-[#F5F3FF] hover:bg-[#252141] transition-colors"
             aria-label="Close dialog"
           >
             <X className="w-5 h-5" />

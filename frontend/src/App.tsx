@@ -2,48 +2,63 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthRoleProvider, useAuthRole } from "./context/AuthRoleContext";
 
-// Import Public Pages
-import Home from "./pages/Home";
-import LoginLandingPage from "./pages/LoginLandingPage";
-import { UserLoginPage, AnalystLoginPage, AdminLoginPage } from "./pages/PortalLogin";
-import Register from "./pages/Register";
-import FeaturesPage from "./pages/FeaturesPage";
-import HowItWorksPage from "./pages/HowItWorksPage";
-import SecurityPage from "./pages/SecurityPage";
-import AboutPage from "./pages/AboutPage";
-import FaqPage from "./pages/FaqPage";
-import PrivacyPage from "./pages/PrivacyPage";
-import TermsPage from "./pages/TermsPage";
-import ResponsibleAiPage from "./pages/ResponsibleAiPage";
-import ContactPage from "./pages/ContactPage";
-import DemoPage from "./pages/DemoPage";
-import NotFoundPage from "./pages/NotFoundPage";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/queryClient";
+import PageLoading from "./components/PageLoading";
 
-// Import Authenticated Protected Pages
-import Dashboard from "./pages/Dashboard";
-import Assessment from "./pages/Assessment";
-import Prediction from "./pages/Prediction";
-import PredictionHistory from "./pages/PredictionHistory";
-import ModelMonitoring from "./pages/ModelMonitoring";
-import ModelCard from "./pages/ModelCard";
-import Reports from "./pages/Reports";
-import Businesses from "./pages/Businesses";
-import Documents from "./pages/Documents";
-import Settings from "./pages/Settings";
-import AnalystDashboard from "./pages/AnalystDashboard";
-import AssessmentReview from "./pages/AssessmentReview";
+// Code-split Public Pages
+const Home = React.lazy(() => import("./pages/Home"));
+const LoginLandingPage = React.lazy(() => import("./pages/LoginLandingPage"));
+const UserLoginPage = React.lazy(() =>
+  import("./pages/PortalLogin").then((m) => ({ default: m.UserLoginPage }))
+);
+const AnalystLoginPage = React.lazy(() =>
+  import("./pages/PortalLogin").then((m) => ({ default: m.AnalystLoginPage }))
+);
+const AdminLoginPage = React.lazy(() =>
+  import("./pages/PortalLogin").then((m) => ({ default: m.AdminLoginPage }))
+);
+const Register = React.lazy(() => import("./pages/Register"));
+const VerifyEmail = React.lazy(() => import("./pages/VerifyEmail"));
+const FeaturesPage = React.lazy(() => import("./pages/FeaturesPage"));
+const HowItWorksPage = React.lazy(() => import("./pages/HowItWorksPage"));
+const SecurityPage = React.lazy(() => import("./pages/SecurityPage"));
+const AboutPage = React.lazy(() => import("./pages/AboutPage"));
+const FaqPage = React.lazy(() => import("./pages/FaqPage"));
+const PrivacyPage = React.lazy(() => import("./pages/PrivacyPage"));
+const TermsPage = React.lazy(() => import("./pages/TermsPage"));
+const ResponsibleAiPage = React.lazy(() => import("./pages/ResponsibleAiPage"));
+const ContactPage = React.lazy(() => import("./pages/ContactPage"));
+const DemoPage = React.lazy(() => import("./pages/DemoPage"));
+const NotFoundPage = React.lazy(() => import("./pages/NotFoundPage"));
 
-// Import Dedicated Admin Pages
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminBusinesses from "./pages/admin/AdminBusinesses";
-import AdminAssessments from "./pages/admin/AdminAssessments";
-import AdminAnalysts from "./pages/admin/AdminAnalysts";
-import AdminRiskIntelligence from "./pages/admin/AdminRiskIntelligence";
-import AdminDocuments from "./pages/admin/AdminDocuments";
-import AdminAuditLogs from "./pages/admin/AdminAuditLogs";
-import AdminSettings from "./pages/admin/AdminSettings";
-import AdminNotifications from "./pages/admin/AdminNotifications";
+// Code-split Authenticated Protected Pages
+const Dashboard = React.lazy(() => import("./pages/Dashboard"));
+const Assessment = React.lazy(() => import("./pages/Assessment"));
+const Prediction = React.lazy(() => import("./pages/Prediction"));
+const PredictionHistory = React.lazy(() => import("./pages/PredictionHistory"));
+const ModelMonitoring = React.lazy(() => import("./pages/ModelMonitoring"));
+const ModelCard = React.lazy(() => import("./pages/ModelCard"));
+const Reports = React.lazy(() => import("./pages/Reports"));
+const Businesses = React.lazy(() => import("./pages/Businesses"));
+const Documents = React.lazy(() => import("./pages/Documents"));
+const Settings = React.lazy(() => import("./pages/Settings"));
+const FinancialIntelligence = React.lazy(() => import("./pages/FinancialIntelligence"));
+const AnalystDashboard = React.lazy(() => import("./pages/AnalystDashboard"));
+const AssessmentReview = React.lazy(() => import("./pages/AssessmentReview"));
+const Explainability = React.lazy(() => import("./pages/Explainability"));
+
+// Code-split Dedicated Admin Pages
+const AdminDashboard = React.lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminUsers = React.lazy(() => import("./pages/admin/AdminUsers"));
+const AdminBusinesses = React.lazy(() => import("./pages/admin/AdminBusinesses"));
+const AdminAssessments = React.lazy(() => import("./pages/admin/AdminAssessments"));
+const AdminAnalysts = React.lazy(() => import("./pages/admin/AdminAnalysts"));
+const AdminRiskIntelligence = React.lazy(() => import("./pages/admin/AdminRiskIntelligence"));
+const AdminDocuments = React.lazy(() => import("./pages/admin/AdminDocuments"));
+const AdminAuditLogs = React.lazy(() => import("./pages/admin/AdminAuditLogs"));
+const AdminSettings = React.lazy(() => import("./pages/admin/AdminSettings"));
+const AdminNotifications = React.lazy(() => import("./pages/admin/AdminNotifications"));
 
 // Import UI Providers and Components
 import LoadingSpinner from "./components/LoadingSpinner";
@@ -55,14 +70,22 @@ import { ShieldAlert } from "lucide-react";
 
 // Authenticated Route Guard Component
 function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuthRole();
+  const { user, userProfile, loading, profileLoading } = useAuthRole();
 
-  if (loading) {
+  if (loading || (profileLoading && !userProfile)) {
     return <LoadingSpinner fullPage text="Checking authentication..." />;
   }
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (!user.emailVerified && !userProfile?.email_verified) {
+    return <Navigate to="/verify-email" replace />;
+  }
+
+  if (userProfile?.approval_status === "suspended") {
+    return <Navigate to="/verify-email" replace />;
   }
 
   return <>{children}</>;
@@ -76,9 +99,9 @@ function RoleRoute({
   children: React.ReactNode;
   allowedRoles: string[];
 }) {
-  const { user, role, loading, profileLoading } = useAuthRole();
+  const { user, userProfile, role, loading, profileLoading } = useAuthRole();
 
-  if (loading || profileLoading) {
+  if (loading || (profileLoading && !userProfile)) {
     return <LoadingSpinner fullPage text="Verifying permissions..." />;
   }
 
@@ -86,31 +109,44 @@ function RoleRoute({
     return <Navigate to="/login" replace />;
   }
 
+  if (!user.emailVerified && !userProfile?.email_verified) {
+    return <Navigate to="/verify-email" replace />;
+  }
+
   const userRole = (role || "user").toLowerCase();
+
+  // If user is analyst, strictly enforce approval status
+  if (userRole === "analyst") {
+    const approval = userProfile?.approval_status || "pending_email_verification";
+    if (approval !== "approved" && approval !== "active") {
+      return <Navigate to="/verify-email" replace />;
+    }
+  }
+
   const isAllowed = allowedRoles.map((r) => r.toLowerCase()).includes(userRole);
 
   if (!isAllowed) {
     if (allowedRoles.includes("admin") && !allowedRoles.includes("user") && !allowedRoles.includes("analyst")) {
       return (
-        <div className="min-h-screen bg-[#030712] flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-[#081120] border border-rose-500/30 rounded-2xl p-6 text-center shadow-2xl">
+        <div className="min-h-screen bg-[#0C0A1D] flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-[#1C1933] border border-rose-500/30 rounded-2xl p-6 text-center shadow-2xl">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
               <ShieldAlert className="w-8 h-8" />
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">Access Denied</h2>
-            <p className="text-slate-300 text-sm mb-6">
+            <h2 className="text-xl font-bold text-[#F5F3FF] mb-2 font-display">Access Denied</h2>
+            <p className="text-[#B7B1D1] text-sm mb-6">
               Access denied. Administrator privileges are required.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <a
                 href={userRole === "analyst" ? "/analyst" : "/dashboard"}
-                className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold transition"
+                className="px-4 py-2 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-sm font-semibold transition shadow-md shadow-[#8B5CF6]/25"
               >
                 Return to Workspace
               </a>
               <a
                 href="/login/admin"
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold transition border border-slate-700"
+                className="px-4 py-2 rounded-xl bg-[#252141] hover:bg-[#30294D] text-[#F5F3FF] text-sm font-semibold transition border border-[#383154]"
               >
                 Admin Login
               </a>
@@ -121,25 +157,25 @@ function RoleRoute({
     }
     if (allowedRoles.includes("analyst") && !allowedRoles.includes("user")) {
       return (
-        <div className="min-h-screen bg-[#030712] flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-[#081120] border border-amber-500/30 rounded-2xl p-6 text-center shadow-2xl">
+        <div className="min-h-screen bg-[#0C0A1D] flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-[#1C1933] border border-amber-500/30 rounded-2xl p-6 text-center shadow-2xl">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
               <ShieldAlert className="w-8 h-8" />
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">Access Denied</h2>
-            <p className="text-slate-300 text-sm mb-6">
+            <h2 className="text-xl font-bold text-[#F5F3FF] mb-2 font-display">Access Denied</h2>
+            <p className="text-[#B7B1D1] text-sm mb-6">
               Access denied. This portal is restricted to Credit Risk Analysts.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <a
                 href="/dashboard"
-                className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold transition"
+                className="px-4 py-2 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-sm font-semibold transition shadow-md shadow-[#8B5CF6]/25"
               >
                 Return to MSME Portal
               </a>
               <a
                 href="/login/analyst"
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold transition border border-slate-700"
+                className="px-4 py-2 rounded-xl bg-[#252141] hover:bg-[#30294D] text-[#F5F3FF] text-sm font-semibold transition border border-[#383154]"
               >
                 Analyst Login
               </a>
@@ -158,24 +194,32 @@ function RoleRoute({
   return <>{children}</>;
 }
 
+// Role-aware redirect for /notifications
+function NotificationsRoute() {
+  const { isAdmin } = useAuthRole();
+  return <Navigate to={isAdmin ? "/admin/notifications" : "/settings?tab=alerts"} replace />;
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
-      <ToastProvider>
-        <AuthRoleProvider>
-          <BrowserRouter
-            future={{
-              v7_startTransition: true,
-              v7_relativeSplatPath: true,
-            }}
-          >
-            {/* Global Search & Command Palette (Ctrl+K) */}
-            <CommandPalette />
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <AuthRoleProvider>
+            <BrowserRouter
+              future={{
+                v7_startTransition: true,
+                v7_relativeSplatPath: true,
+              }}
+            >
+              {/* Global Search & Command Palette (Ctrl+K) */}
+              <CommandPalette />
 
-            {/* First-time Onboarding Product Tour */}
-            <OnboardingModal />
+              {/* First-time Onboarding Product Tour */}
+              <OnboardingModal />
 
-            <Routes>
+              <React.Suspense fallback={<PageLoading />}>
+                <Routes>
               {/* Public SaaS Pages */}
               <Route path="/" element={<Home />} />
               <Route path="/features" element={<FeaturesPage />} />
@@ -195,6 +239,7 @@ export default function App() {
               <Route path="/login/analyst" element={<AnalystLoginPage />} />
               <Route path="/login/admin" element={<AdminLoginPage />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
 
               {/* MSME Business Owner Portal Routes */}
               <Route
@@ -261,8 +306,48 @@ export default function App() {
                   </PrivateRoute>
                 }
               />
+              <Route
+                path="/notifications"
+                element={
+                  <PrivateRoute>
+                    <NotificationsRoute />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/financial-intelligence"
+                element={
+                  <PrivateRoute>
+                    <FinancialIntelligence />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/explainability"
+                element={
+                  <PrivateRoute>
+                    <Explainability />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/explainability/:id"
+                element={
+                  <PrivateRoute>
+                    <Explainability />
+                  </PrivateRoute>
+                }
+              />
 
               {/* Analyst Review Portal Routes (Restricted to Analyst and Admin) */}
+              <Route
+                path="/analyst/explainability/:id"
+                element={
+                  <RoleRoute allowedRoles={["analyst", "admin"]}>
+                    <Explainability />
+                  </RoleRoute>
+                }
+              />
               <Route
                 path="/analyst"
                 element={
@@ -284,6 +369,22 @@ export default function App() {
                 element={
                   <RoleRoute allowedRoles={["analyst", "admin"]}>
                     <AssessmentReview />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="/analyst/financial-intelligence"
+                element={
+                  <RoleRoute allowedRoles={["analyst", "admin"]}>
+                    <FinancialIntelligence />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="/analyst/financial-intelligence/:userId"
+                element={
+                  <RoleRoute allowedRoles={["analyst", "admin"]}>
+                    <FinancialIntelligence />
                   </RoleRoute>
                 }
               />
@@ -334,6 +435,22 @@ export default function App() {
                 element={
                   <RoleRoute allowedRoles={["admin"]}>
                     <AdminRiskIntelligence />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="/admin/financial-intelligence"
+                element={
+                  <RoleRoute allowedRoles={["admin"]}>
+                    <FinancialIntelligence />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="/admin/financial-intelligence/:userId"
+                element={
+                  <RoleRoute allowedRoles={["admin"]}>
+                    <FinancialIntelligence />
                   </RoleRoute>
                 }
               />
@@ -389,9 +506,11 @@ export default function App() {
               {/* Fallback 404 Route */}
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
-          </BrowserRouter>
-        </AuthRoleProvider>
-      </ToastProvider>
-    </ErrorBoundary>
+          </React.Suspense>
+        </BrowserRouter>
+      </AuthRoleProvider>
+    </ToastProvider>
+  </QueryClientProvider>
+</ErrorBoundary>
   );
 }

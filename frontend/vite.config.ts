@@ -15,7 +15,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
+          vendor: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
           firebase: ['firebase/app', 'firebase/auth'],
           icons: ['lucide-react'],
         },

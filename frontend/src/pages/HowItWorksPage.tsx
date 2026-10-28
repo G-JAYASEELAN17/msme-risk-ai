@@ -10,7 +10,7 @@ export default function HowItWorksPage() {
   const steps = [
     {
       num: "01",
-      icon: <Building className="w-6 h-6 text-cyan-400" />,
+      icon: <Building className="w-6 h-6 text-[#A78BFA]" />,
       title: "Submit Business & Financial Indicators",
       desc: "Enter company profile parameters including age, sector, employees, annual turnover, cash flow, debt burden, and operational indicators such as utility payment consistency and invoice fulfillment rates."
     },
@@ -35,7 +35,7 @@ export default function HowItWorksPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#060b14] text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-[#0C0A1D] text-slate-100 flex flex-col">
       <SEO
         title="How It Works | MSME Risk AI"
         description="Learn how MSME Risk AI works: from business input and XGBoost evaluation to explainable SHAP factor attribution and analyst review workflow."
@@ -45,7 +45,7 @@ export default function HowItWorksPage() {
 
       <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-800 text-cyan-300 text-xs font-semibold mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#8B5CF6]/15 border border-[#383154] text-[#C4B5FD] text-xs font-semibold mb-4">
             Underwriting Workflow
           </div>
           <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
@@ -58,8 +58,8 @@ export default function HowItWorksPage() {
 
         <div className="space-y-8 mb-16">
           {steps.map((s, i) => (
-            <div key={i} className="p-8 rounded-2xl bg-[#091426] border border-[#182c47] flex flex-col md:flex-row items-start md:items-center gap-6">
-              <div className="text-4xl font-extrabold text-cyan-500/20 md:w-16 shrink-0">{s.num}</div>
+            <div key={i} className="p-8 rounded-2xl bg-[#1C1933] border border-[#383154] flex flex-col md:flex-row items-start md:items-center gap-6">
+              <div className="text-4xl font-extrabold text-[#8B5CF6]/20 md:w-16 shrink-0">{s.num}</div>
               <div className="p-3 rounded-xl bg-slate-800 border border-slate-700 shrink-0">{s.icon}</div>
               <div className="flex-1">
                 <h3 className="text-xl font-bold text-white mb-2">{s.title}</h3>
@@ -69,7 +69,7 @@ export default function HowItWorksPage() {
           ))}
         </div>
 
-        <div className="p-8 rounded-2xl bg-gradient-to-r from-[#0c1a2e] to-[#0a1526] border border-[#182c47] text-center">
+        <div className="p-8 rounded-2xl bg-gradient-to-r from-[#1C1933] to-[#1C1933] border border-[#383154] text-center">
           <h2 className="text-2xl font-bold text-white mb-2">Experience the Workflow Firsthand</h2>
           <p className="text-sm text-slate-300 max-w-xl mx-auto mb-6">
             Get started now with an instant risk assessment and explainable credit report.
@@ -86,7 +86,7 @@ export default function HowItWorksPage() {
         </div>
       </main>
 
-      <footer className="bg-[#040810] border-t border-[#101c2e] py-8 text-center text-xs text-slate-400">
+      <footer className="bg-[#0C0A1D] border-t border-[#1C1933] py-8 text-center text-xs text-slate-400">
         <p>&copy; {new Date().getFullYear()} MSME Risk AI. Workflow Governance.</p>
       </footer>
     </div>

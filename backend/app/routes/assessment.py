@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func, case
 from typing import List, Optional
 import datetime
 
@@ -39,26 +40,31 @@ def get_analyst_dashboard_stats(
 ):
     """
     Analyst/Admin only: Portfolio-wide review queue metrics and risk category distribution.
+    Optimized with consolidated SQL aggregations.
     """
-    total = db.query(models.Assessment).count()
-    pending = db.query(models.Assessment).filter(models.Assessment.review_status == "pending").count()
-    in_review = db.query(models.Assessment).filter(models.Assessment.review_status == "in_review").count()
-    completed = db.query(models.Assessment).filter(models.Assessment.review_status.in_(["approved", "rejected"])).count()
-    needs_info = db.query(models.Assessment).filter(models.Assessment.review_status == "needs_info").count()
-    
-    low = db.query(models.Prediction).filter(models.Prediction.risk_level.ilike("LOW")).count()
-    med = db.query(models.Prediction).filter(models.Prediction.risk_level.ilike("MEDIUM")).count()
-    high = db.query(models.Prediction).filter(models.Prediction.risk_level.ilike("HIGH")).count()
+    assess_counts = db.query(
+        func.count(models.Assessment.id).label("total"),
+        func.sum(case((models.Assessment.review_status == "pending", 1), else_=0)).label("pending"),
+        func.sum(case((models.Assessment.review_status == "in_review", 1), else_=0)).label("in_review"),
+        func.sum(case((models.Assessment.review_status.in_(["approved", "rejected"]), 1), else_=0)).label("completed"),
+        func.sum(case((models.Assessment.review_status == "needs_info", 1), else_=0)).label("needs_info")
+    ).one()
+
+    pred_counts = db.query(
+        func.sum(case((func.upper(models.Prediction.risk_level) == "LOW", 1), else_=0)).label("low"),
+        func.sum(case((func.upper(models.Prediction.risk_level) == "MEDIUM", 1), else_=0)).label("med"),
+        func.sum(case((func.upper(models.Prediction.risk_level) == "HIGH", 1), else_=0)).label("high")
+    ).one()
 
     return AnalystDashboardStatsResponse(
-        total_assessments=total,
-        pending_reviews=pending,
-        in_review_assessments=in_review,
-        completed_reviews=completed,
-        low_risk_assessments=low,
-        medium_risk_assessments=med,
-        high_risk_assessments=high,
-        needs_info_assessments=needs_info
+        total_assessments=int(assess_counts.total or 0),
+        pending_reviews=int(assess_counts.pending or 0),
+        in_review_assessments=int(assess_counts.in_review or 0),
+        completed_reviews=int(assess_counts.completed or 0),
+        low_risk_assessments=int(pred_counts.low or 0),
+        medium_risk_assessments=int(pred_counts.med or 0),
+        high_risk_assessments=int(pred_counts.high or 0),
+        needs_info_assessments=int(assess_counts.needs_info or 0)
     )
 
 @router.get("")
@@ -273,20 +279,39 @@ def get_dashboard_stats(
             models.Assessment.created_at <= filter_end
         )
 
-    all_records = base_query.order_by(models.Assessment.created_at.desc()).all()
-
-    total_assessments = len(all_records)
+    # 1. Total businesses count
     total_businesses = db.query(models.Business).filter(models.Business.user_id == current_user.uid).count()
 
-    low_count = sum(1 for r in all_records if r.risk_level.upper() == "LOW")
-    med_count = sum(1 for r in all_records if r.risk_level.upper() == "MEDIUM")
-    high_count = sum(1 for r in all_records if r.risk_level.upper() == "HIGH")
-
-    avg_score = (
-        sum(r.default_probability for r in all_records) / total_assessments
-        if total_assessments > 0 else 0.0
+    # 2. Consolidated portfolio metrics (COUNT, AVG, SUM CASE) via SQL
+    agg_query = db.query(
+        func.count(models.Assessment.id).label("total"),
+        func.avg(models.Prediction.default_probability).label("avg_prob"),
+        func.sum(case((func.upper(models.Prediction.risk_level) == "LOW", 1), else_=0)).label("low"),
+        func.sum(case((func.upper(models.Prediction.risk_level) == "MEDIUM", 1), else_=0)).label("med"),
+        func.sum(case((func.upper(models.Prediction.risk_level) == "HIGH", 1), else_=0)).label("high")
+    ).join(
+        models.Business, models.Assessment.business_id == models.Business.id
+    ).join(
+        models.Prediction, models.Prediction.assessment_id == models.Assessment.id
+    ).filter(
+        models.Business.user_id == current_user.uid
     )
 
+    if filter_start:
+        agg_query = agg_query.filter(
+            models.Assessment.created_at >= filter_start,
+            models.Assessment.created_at <= filter_end
+        )
+
+    agg_result = agg_query.one()
+    total_assessments = int(agg_result.total or 0)
+    avg_score = float(agg_result.avg_prob or 0.0)
+    low_count = int(agg_result.low or 0)
+    med_count = int(agg_result.med or 0)
+    high_count = int(agg_result.high or 0)
+
+    # 3. Top 5 recent assessments only (not the whole database table)
+    recent_records = base_query.order_by(models.Assessment.created_at.desc()).limit(5).all()
     recent_assessments = [
         AssessmentResponse(
             id=r.id,
@@ -298,7 +323,7 @@ def get_dashboard_stats(
             confidence=r.confidence,
             review_status=r.review_status or "pending",
             review_notes=r.review_notes
-        ) for r in all_records[:5]
+        ) for r in recent_records
     ]
 
     risk_distribution = [
@@ -307,54 +332,81 @@ def get_dashboard_stats(
         {"name": "High Risk", "value": high_count},
     ]
 
-    # Trends grouping by date
+    # 4. Trends grouping by date via SQL GROUP BY (aggregated on database engine)
     trends_map = {}
     num_days = 7 if range_param == "7d" else 30 if range_param == "30d" else 90
+    day_key_map = {}
     for i in range(num_days - 1, -1, -1):
-        d_str = (now - datetime.timedelta(days=i)).strftime("%b %d")
+        day_date = (now - datetime.timedelta(days=i)).date()
+        d_str = day_date.strftime("%b %d")
         trends_map[d_str] = 0
+        day_key_map[day_date.isoformat()] = d_str
 
-    for r in all_records:
-        d_str = r.created_at.strftime("%b %d")
-        if d_str in trends_map:
-            trends_map[d_str] += 1
+    trend_group_query = db.query(
+        func.date(models.Assessment.created_at).label("day_str"),
+        func.count(models.Assessment.id).label("count")
+    ).join(
+        models.Business, models.Assessment.business_id == models.Business.id
+    ).filter(models.Business.user_id == current_user.uid)
+
+    if filter_start:
+        trend_group_query = trend_group_query.filter(
+            models.Assessment.created_at >= filter_start,
+            models.Assessment.created_at <= filter_end
+        )
+
+    for day_val, count in trend_group_query.group_by(func.date(models.Assessment.created_at)).all():
+        if day_val:
+            day_str = str(day_val)[:10]
+            if day_str in day_key_map:
+                trends_map[day_key_map[day_str]] += count
+            else:
+                try:
+                    parsed_d = datetime.date.fromisoformat(day_str).strftime("%b %d")
+                    if parsed_d in trends_map:
+                        trends_map[parsed_d] += count
+                except Exception:
+                    pass
 
     assessment_trends = [{"date": k, "count": v} for k, v in trends_map.items()]
 
-    # Industry comparison breakdown
-    industry_map = {}
-    for r in all_records:
-        ind = r.industry or "General"
-        if ind not in industry_map:
-            industry_map[ind] = {
-                "count": 0,
-                "prob_sum": 0.0,
-                "low": 0,
-                "med": 0,
-                "high": 0
-            }
-        industry_map[ind]["count"] += 1
-        industry_map[ind]["prob_sum"] += r.default_probability
-        lvl = r.risk_level.upper()
-        if lvl == "LOW":
-            industry_map[ind]["low"] += 1
-        elif lvl == "MEDIUM":
-            industry_map[ind]["med"] += 1
-        elif lvl == "HIGH":
-            industry_map[ind]["high"] += 1
+    # 5. Industry comparison breakdown via SQL GROUP BY
+    ind_query = db.query(
+        func.coalesce(models.Business.industry, "General").label("industry"),
+        func.count(models.Assessment.id).label("count"),
+        func.avg(models.Prediction.default_probability).label("avg_prob"),
+        func.sum(case((func.upper(models.Prediction.risk_level) == "LOW", 1), else_=0)).label("low"),
+        func.sum(case((func.upper(models.Prediction.risk_level) == "MEDIUM", 1), else_=0)).label("med"),
+        func.sum(case((func.upper(models.Prediction.risk_level) == "HIGH", 1), else_=0)).label("high")
+    ).join(
+        models.Business, models.Assessment.business_id == models.Business.id
+    ).join(
+        models.Prediction, models.Prediction.assessment_id == models.Assessment.id
+    ).filter(
+        models.Business.user_id == current_user.uid
+    )
 
+    if filter_start:
+        ind_query = ind_query.filter(
+            models.Assessment.created_at >= filter_start,
+            models.Assessment.created_at <= filter_end
+        )
+
+    ind_rows = ind_query.group_by(models.Business.industry).all()
     industry_comparison = [
         IndustryRiskStat(
-            industry=k,
-            count=v["count"],
-            avg_default_probability=v["prob_sum"] / v["count"] if v["count"] > 0 else 0.0,
-            low_risk_count=v["low"],
-            medium_risk_count=v["med"],
-            high_risk_count=v["high"]
+            industry=row.industry,
+            count=int(row.count or 0),
+            avg_default_probability=float(row.avg_prob or 0.0),
+            low_risk_count=int(row.low or 0),
+            medium_risk_count=int(row.med or 0),
+            high_risk_count=int(row.high or 0)
         )
-        for k, v in industry_map.items()
+        for row in ind_rows
     ]
 
+    # 6. Top 30 revenue vs risk points (capped limit)
+    rev_risk_records = base_query.order_by(models.Assessment.created_at.desc()).limit(30).all()
     revenue_vs_risk = [
         RevenueVsRiskPoint(
             id=r.id,
@@ -365,7 +417,7 @@ def get_dashboard_stats(
             default_probability=r.default_probability,
             risk_level=r.risk_level
         )
-        for r in all_records[:30]
+        for r in rev_risk_records
     ]
 
     return DashboardStatsResponse(

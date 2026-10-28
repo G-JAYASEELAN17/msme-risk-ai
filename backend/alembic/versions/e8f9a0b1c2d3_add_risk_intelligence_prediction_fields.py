@@ -19,37 +19,57 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+from alembic import context
+
 def upgrade() -> None:
     """Upgrade predictions table with risk score, data quality, and explanation fields."""
+    is_offline = context.is_offline_mode()
     conn = op.get_bind()
-    inspector = inspect(conn)
-    existing_tables = inspector.get_table_names()
+    existing_tables = []
+    columns = []
+    if not is_offline and conn is not None:
+        try:
+            inspector = inspect(conn)
+            existing_tables = inspector.get_table_names()
+            if 'predictions' in existing_tables:
+                columns = [c['name'] for c in inspector.get_columns('predictions')]
+        except Exception:
+            existing_tables = []
+            columns = []
     
-    if 'predictions' in existing_tables:
-        columns = [c['name'] for c in inspector.get_columns('predictions')]
-        if 'risk_score' not in columns:
+    if is_offline or ('predictions' in existing_tables):
+        if is_offline or ('risk_score' not in columns):
             op.add_column('predictions', sa.Column('risk_score', sa.Float(), nullable=True, server_default='0.0'))
-        if 'data_quality_score' not in columns:
+        if is_offline or ('data_quality_score' not in columns):
             op.add_column('predictions', sa.Column('data_quality_score', sa.Float(), nullable=True, server_default='100.0'))
-        if 'factor_breakdown' not in columns:
+        if is_offline or ('factor_breakdown' not in columns):
             op.add_column('predictions', sa.Column('factor_breakdown', sa.JSON(), nullable=True))
-        if 'analyst_summary' not in columns:
+        if is_offline or ('analyst_summary' not in columns):
             op.add_column('predictions', sa.Column('analyst_summary', sa.Text(), nullable=True))
 
 
 def downgrade() -> None:
     """Downgrade schema."""
+    is_offline = context.is_offline_mode()
     conn = op.get_bind()
-    inspector = inspect(conn)
-    existing_tables = inspector.get_table_names()
+    existing_tables = []
+    columns = []
+    if not is_offline and conn is not None:
+        try:
+            inspector = inspect(conn)
+            existing_tables = inspector.get_table_names()
+            if 'predictions' in existing_tables:
+                columns = [c['name'] for c in inspector.get_columns('predictions')]
+        except Exception:
+            existing_tables = []
+            columns = []
 
-    if 'predictions' in existing_tables:
-        columns = [c['name'] for c in inspector.get_columns('predictions')]
-        if 'analyst_summary' in columns:
+    if is_offline or ('predictions' in existing_tables):
+        if is_offline or ('analyst_summary' in columns):
             op.drop_column('predictions', 'analyst_summary')
-        if 'factor_breakdown' in columns:
+        if is_offline or ('factor_breakdown' in columns):
             op.drop_column('predictions', 'factor_breakdown')
-        if 'data_quality_score' in columns:
+        if is_offline or ('data_quality_score' in columns):
             op.drop_column('predictions', 'data_quality_score')
-        if 'risk_score' in columns:
+        if is_offline or ('risk_score' in columns):
             op.drop_column('predictions', 'risk_score')

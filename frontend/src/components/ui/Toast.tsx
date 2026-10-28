@@ -64,10 +64,10 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           };
 
           const borders = {
-            success: "border-emerald-500/30 bg-[#091815]",
-            error: "border-rose-500/30 bg-[#1a0c10]",
-            warning: "border-amber-500/30 bg-[#1a1409]",
-            info: "border-sky-500/30 bg-[#0a1526]",
+            success: "border-emerald-500/40 bg-[#1C1933]",
+            error: "border-[#F87171]/40 bg-[#1C1933]",
+            warning: "border-amber-500/40 bg-[#1C1933]",
+            info: "border-[#8B5CF6]/40 bg-[#1C1933]",
           };
 
           return (

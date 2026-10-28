@@ -3,7 +3,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, case
 
 from ..database.database import get_db
 from ..database import models
@@ -656,32 +656,25 @@ def get_admin_model_distribution(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Admin-only: Returns portfolio default probability distribution buckets."""
+    """Admin-only: Returns portfolio default probability distribution buckets via SQL aggregation."""
     verify_admin_access(current_user)
-    predictions = db.query(models.Prediction).all()
 
-    buckets = {
-        "0-10%": 0,
-        "10-25%": 0,
-        "25-50%": 0,
-        "50-75%": 0,
-        "75-100%": 0
-    }
-
-    for p in predictions:
-        prob = p.default_probability
-        if prob < 10.0:
-            buckets["0-10%"] += 1
-        elif prob < 25.0:
-            buckets["10-25%"] += 1
-        elif prob < 50.0:
-            buckets["25-50%"] += 1
-        elif prob < 75.0:
-            buckets["50-75%"] += 1
-        else:
-            buckets["75-100%"] += 1
+    bucket_row = db.query(
+        func.count(models.Prediction.id).label("total"),
+        func.sum(case((models.Prediction.default_probability < 10.0, 1), else_=0)).label("b0_10"),
+        func.sum(case(((models.Prediction.default_probability >= 10.0) & (models.Prediction.default_probability < 25.0), 1), else_=0)).label("b10_25"),
+        func.sum(case(((models.Prediction.default_probability >= 25.0) & (models.Prediction.default_probability < 50.0), 1), else_=0)).label("b25_50"),
+        func.sum(case(((models.Prediction.default_probability >= 50.0) & (models.Prediction.default_probability < 75.0), 1), else_=0)).label("b50_75"),
+        func.sum(case((models.Prediction.default_probability >= 75.0, 1), else_=0)).label("b75_100")
+    ).one()
 
     return {
-        "total": len(predictions),
-        "distribution_buckets": buckets
+        "total": int(bucket_row.total or 0),
+        "distribution_buckets": {
+            "0-10%": int(bucket_row.b0_10 or 0),
+            "10-25%": int(bucket_row.b10_25 or 0),
+            "25-50%": int(bucket_row.b25_50 or 0),
+            "50-75%": int(bucket_row.b50_75 or 0),
+            "75-100%": int(bucket_row.b75_100 or 0)
+        }
     }

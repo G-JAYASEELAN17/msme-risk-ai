@@ -84,7 +84,7 @@ def test_complete_document_intelligence_workflow(client: TestClient, test_user_h
     doc = upload_res.json()
     doc_id = doc["id"]
     assert doc["document_type"] == "BANK_STATEMENT"
-    assert doc["processing_status"] in ["REVIEW_REQUIRED", "EXTRACTED"]
+    assert doc["processing_status"] in ["REVIEW_REQUIRED", "EXTRACTED", "MANUAL_REVIEW_REQUIRED"]
     assert doc["field_count"] > 0
 
     # 2. Check status endpoint
@@ -92,7 +92,7 @@ def test_complete_document_intelligence_workflow(client: TestClient, test_user_h
     assert status_res.status_code == 200
     st = status_res.json()
     assert st["document_type"] == "BANK_STATEMENT"
-    assert st["processing_status"] in ["REVIEW_REQUIRED", "EXTRACTED"]
+    assert st["processing_status"] in ["REVIEW_REQUIRED", "EXTRACTED", "MANUAL_REVIEW_REQUIRED"]
 
     # 3. Check extraction details endpoint
     ext_res = client.get(f"/api/documents/{doc_id}/extraction", headers=test_user_headers)

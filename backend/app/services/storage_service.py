@@ -129,5 +129,50 @@ class StorageService:
             return p
         return None
 
+    async def get_file_bytes(self, user_id: str, storage_path_or_local: str) -> Optional[bytes]:
+        """
+        Retrieves file bytes from local filesystem or Supabase private storage bucket.
+        """
+        local_path = self.get_local_path(storage_path_or_local)
+        if local_path and local_path.is_file():
+            with open(local_path, "rb") as f:
+                return f.read()
+
+        if self.is_supabase_enabled and storage_path_or_local.startswith("users/"):
+            try:
+                download_url = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/authenticated/{self.bucket}/{storage_path_or_local}"
+                headers = self._get_headers()
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    resp = await client.get(download_url, headers=headers)
+                    if resp.status_code == 200:
+                        return resp.content
+            except Exception as e:
+                logger.error(f"Error fetching file bytes from Supabase: {e}")
+
+        return None
+
+    def get_file_bytes_sync(self, user_id: str, storage_path_or_local: str) -> Optional[bytes]:
+        """
+        Synchronous retrieval of file bytes from local filesystem or Supabase storage.
+        """
+        local_path = self.get_local_path(storage_path_or_local)
+        if local_path and local_path.is_file():
+            with open(local_path, "rb") as f:
+                return f.read()
+
+        if self.is_supabase_enabled and storage_path_or_local.startswith("users/"):
+            try:
+                download_url = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/authenticated/{self.bucket}/{storage_path_or_local}"
+                headers = self._get_headers()
+                with httpx.Client(timeout=30.0) as client:
+                    resp = client.get(download_url, headers=headers)
+                    if resp.status_code == 200:
+                        return resp.content
+            except Exception as e:
+                logger.error(f"Error synchronously fetching file bytes from Supabase: {e}")
+
+        return None
+
 
 storage_service = StorageService()
+

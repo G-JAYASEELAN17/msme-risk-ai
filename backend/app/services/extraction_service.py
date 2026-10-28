@@ -181,18 +181,61 @@ FIELD_PATTERNS: Dict[str, List[Tuple[str, float]]] = {
     ],
     "previous_defaults": [
         (r"(?:previous\s+defaults|defaults\s+recorded|cheque\s+bounces|dishonour\s+count)[^\d]*(\d+)", 0.92),
+    ],
+    "total_credits": [
+        (r"(?:total\s+credits?|total\s+deposits?|credit\s+turnover|credit\s+sum)[^\d₹$]*([₹$]?\s*[\d,]+(?:\.\d+)?)", 0.93),
+    ],
+    "total_debits": [
+        (r"(?:total\s+debits?|total\s+withdrawals?|debit\s+turnover|debit\s+sum)[^\d₹$]*([₹$]?\s*[\d,]+(?:\.\d+)?)", 0.93),
+    ],
+    "closing_balance": [
+        (r"(?:closing\s+balance|effective\s+balance|available\s+balance|end\s+balance)[^\d₹$]*([₹$]?\s*[\d,]+(?:\.\d+)?)", 0.93),
+        (r"(?:account\s+balance|ledger\s+balance)[^\d₹$]*([₹$]?\s*[\d,]+(?:\.\d+)?)", 0.88),
+    ],
+    "taxable_value": [
+        (r"(?:taxable\s+value|taxable\s+amount|taxable\s+turnover)[^\d₹$]*([₹$]?\s*[\d,]+(?:\.\d+)?)", 0.93),
+    ],
+    "tax_totals": [
+        (r"(?:total\s+tax\s+amount|total\s+tax\s+payable|tax\s+totals?|total\s+gst\s+paid|integrated\s+tax|central\s+tax)[^\d₹$]*([₹$]?\s*[\d,]+(?:\.\d+)?)", 0.91),
     ]
 }
 
 STRING_FIELD_PATTERNS: Dict[str, List[Tuple[str, float]]] = {
     "business_name": [
-        (r"(?:account\s+holder|legal\s+name|entity|billed\s+to|company|consumer\s+name)[\s:]+([A-Za-z0-9\s&.,'-]{4,60})", 0.91),
+        (r"(?:account\s+holder|legal\s+name|trade\s+name|taxpayer\s+name|entity|billed\s+to|company|consumer\s+name)[\s:]+([A-Za-z0-9\s&.,'-]{4,60})", 0.91),
+    ],
+    "account_holder": [
+        (r"(?:account\s+holder(?:\s+name)?|name\s+of\s+account\s+holder|customer\s+name)[\s:]+([A-Za-z0-9\s&.,'-]{4,60})", 0.93),
     ],
     "statement_period": [
-        (r"(?:statement\s+period|tax\s+period|period|billing\s+period)[\s:]+([A-Za-z0-9\s,-]{4,40})", 0.89),
+        (r"(?:statement\s+period|tax\s+period|period|billing\s+period|for\s+the\s+period)[\s:]+([A-Za-z0-9\s,-]{4,40})", 0.89),
+    ],
+    "reporting_period": [
+        (r"(?:financial\s+year|fy\s*20\d{2}-\d{2}|assessment\s+year|reporting\s+period|period\s+ended)[\s:]*([A-Za-z0-9\s,-]{4,30})", 0.90),
+    ],
+    "filing_period": [
+        (r"(?:return\s+period|filing\s+period|month\s+of\s+filing)[\s:]*([A-Za-z0-9\s,-]{4,30})", 0.90),
+    ],
+    "gstin": [
+        (r"\b([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1})\b", 0.96),
+    ],
+    "pan": [
+        (r"\b([A-Z]{5}[0-9]{4}[A-Z]{1})\b", 0.95),
+    ],
+    "aadhaar": [
+        (r"\b(\d{4}\s\d{4}\s\d{4}|\d{12})\b", 0.94),
+    ],
+    "dob": [
+        (r"(?:dob|date\s+of\s+birth|birth\s+date|incorporation\s+date)[\s:]+(\d{1,2}[-/][A-Za-z0-9]{2,9}[-/]\d{2,4}|\d{4}-\d{2}-\d{2})", 0.92),
+    ],
+    "udyam_number": [
+        (r"\b(UDYAM-[A-Z]{2}-\d{2}-\d{7})\b", 0.96),
+    ],
+    "cin": [
+        (r"\b([UL][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6})\b", 0.95),
     ],
     "invoice_date": [
-        (r"(?:invoice\s+date|bill\s+date|date)[\s:]+(\d{1,2}[-/][A-Za-z0-9]{3,9}[-/]\d{2,4}|\d{4}-\d{2}-\d{2})", 0.92),
+        (r"(?:invoice\s+date|bill\s+date|statement\s+date|date)[\s:]+(\d{1,2}[-/][A-Za-z0-9]{3,9}[-/]\d{2,4}|\d{4}-\d{2}-\d{2})", 0.92),
     ]
 }
 

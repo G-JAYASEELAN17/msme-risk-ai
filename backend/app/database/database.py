@@ -25,9 +25,10 @@ else:
     # Supabase PostgreSQL configuration with connection pooling & liveness checks
     engine_kwargs.update({
         "pool_size": 10,
-        "max_overflow": 20,
+        "max_overflow": 5,
+        "pool_timeout": 15,
         "pool_pre_ping": True,
-        "pool_recycle": 60,
+        "pool_recycle": 300,
         "connect_args": {
             "keepalives": 1,
             "keepalives_idle": 30,

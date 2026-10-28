@@ -27,6 +27,7 @@ import {
   BarChart3,
   Bot,
   Brain,
+  BrainCircuit,
   Bell,
 } from "lucide-react";
 import Brand from "./Brand";
@@ -40,13 +41,19 @@ interface SidebarProps {
   userName?: string;
 }
 
+let cachedGlobalBizName = "";
+
+export function clearSidebarCache() {
+  cachedGlobalBizName = "";
+}
+
 export default function Sidebar({ active, businessName, userName }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const [resolvedBizName, setResolvedBizName] = useState<string>(businessName || "");
+  const [resolvedBizName, setResolvedBizName] = useState<string>(() => businessName || cachedGlobalBizName || "");
 
   const { isUser, isAnalyst, isAdmin, userProfile } = useAuthRole();
 
@@ -59,14 +66,20 @@ export default function Sidebar({ active, businessName, userName }: SidebarProps
     (isAdmin ? "System Administrator" : isUser ? "Business Owner" : "Risk Officer");
   const userInitials = userDisplayName.substring(0, 2).toUpperCase();
 
-  // Lazy load business name for MSME user if not provided in props
+  // Lazy load business name for MSME user if not provided in props (with module cache)
   useEffect(() => {
     if (businessName) {
+      cachedGlobalBizName = businessName;
       setResolvedBizName(businessName);
+    } else if (cachedGlobalBizName) {
+      if (!resolvedBizName) {
+        setResolvedBizName(cachedGlobalBizName);
+      }
     } else if (isUser && !resolvedBizName) {
       api.getBusinesses()
         .then((biz) => {
           if (biz && biz.length > 0) {
+            cachedGlobalBizName = biz[0].name;
             setResolvedBizName(biz[0].name);
           }
         })
@@ -77,6 +90,7 @@ export default function Sidebar({ active, businessName, userName }: SidebarProps
   const handleSignOut = async () => {
     try {
       setSigningOut(true);
+      cachedGlobalBizName = "";
       await signOut(auth);
       navigate("/login");
     } catch (error) {
@@ -105,7 +119,19 @@ export default function Sidebar({ active, businessName, userName }: SidebarProps
       label: "Assessments",
       path: "/assessment",
       icon: PlusCircle,
-      active: active === "New assessment" || active === "Assessments" || location.pathname === "/assessment",
+      active: active === "New assessment" || active === "Assessments" || active === "Risk results" || location.pathname === "/assessment" || location.pathname === "/prediction",
+    },
+    {
+      label: "Financial Intelligence",
+      path: "/financial-intelligence",
+      icon: BarChart3,
+      active: active === "Financial Intelligence" || location.pathname.startsWith("/financial-intelligence"),
+    },
+    {
+      label: "Explainable AI",
+      path: "/explainability",
+      icon: BrainCircuit,
+      active: active === "Explainable AI" || location.pathname.startsWith("/explainability"),
     },
     {
       label: "Documents",
@@ -156,7 +182,7 @@ export default function Sidebar({ active, businessName, userName }: SidebarProps
       label: "Assessments",
       path: "/assessment",
       icon: PlusCircle,
-      active: active === "New assessment" || active === "Assessments" || location.pathname === "/assessment",
+      active: active === "New assessment" || active === "Assessments" || active === "Risk results" || location.pathname === "/assessment" || location.pathname === "/prediction",
     },
     {
       label: "Documents",
@@ -171,6 +197,18 @@ export default function Sidebar({ active, businessName, userName }: SidebarProps
       active:
         (active === "Risk results" || active === "Risk Intelligence" || location.pathname === "/prediction") &&
         !location.search.includes("simulator=open"),
+    },
+    {
+      label: "Financial Intelligence",
+      path: "/analyst/financial-intelligence",
+      icon: BarChart3,
+      active: active === "Financial Intelligence" || location.pathname.startsWith("/analyst/financial-intelligence"),
+    },
+    {
+      label: "Explainable AI",
+      path: "/explainability",
+      icon: BrainCircuit,
+      active: active === "Explainable AI" || location.pathname.startsWith("/explainability") || location.pathname.startsWith("/analyst/explainability"),
     },
     {
       label: "Prediction History",
@@ -237,6 +275,12 @@ export default function Sidebar({ active, businessName, userName }: SidebarProps
       active: location.pathname.startsWith("/admin/risk-intelligence") || active === "Risk Intelligence",
     },
     {
+      label: "Financial Intelligence",
+      path: "/admin/financial-intelligence",
+      icon: BarChart3,
+      active: location.pathname.startsWith("/admin/financial-intelligence") || active === "Financial Intelligence",
+    },
+    {
       label: "Model Monitoring",
       path: "/admin/model-monitoring",
       icon: Bot,
@@ -247,6 +291,12 @@ export default function Sidebar({ active, businessName, userName }: SidebarProps
       path: "/admin/model-card",
       icon: Brain,
       active: location.pathname.startsWith("/admin/model-card") || active === "Model card",
+    },
+    {
+      label: "Explainable AI",
+      path: "/explainability",
+      icon: BrainCircuit,
+      active: active === "Explainable AI" || location.pathname.startsWith("/explainability") || location.pathname.startsWith("/analyst/explainability"),
     },
     {
       label: "Documents",
@@ -278,71 +328,41 @@ export default function Sidebar({ active, businessName, userName }: SidebarProps
   const navItems = isAdmin ? adminNavItems : isAnalyst ? analystNavItems : userNavItems;
 
   const sidebarContent = (
-    <div className="h-full flex flex-col justify-between p-4 sm:p-5 bg-[#081120] border-r border-[#1a2d4b]">
+    <div className="h-full flex flex-col justify-between p-4 bg-[#0C0A1D] border-r border-[#383154] select-none">
       {/* Top section: Brand & Portal Workspace Badge */}
-      <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between px-1">
           <Brand />
           <button
             onClick={() => setMobileOpen(false)}
-            className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+            className="lg:hidden p-1.5 rounded-xl text-[#B7B1D1] hover:text-[#F5F3FF] hover:bg-[#1C1933] border border-transparent hover:border-[#383154]"
             aria-label="Close menu"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Portal-Specific Workspace Badge */}
-        <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#0d1c33] border border-[#1d3559]">
+        <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#1C1933] border border-[#383154]">
           <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            <div
-              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
-                isAdmin
-                  ? "bg-purple-600/20 text-purple-400 border-purple-500/30"
-                  : isAnalyst
-                  ? "bg-indigo-600/20 text-indigo-400 border-indigo-500/30"
-                  : "bg-cyan-600/20 text-cyan-400 border-cyan-500/30"
-              }`}
-            >
-              {isAdmin ? (
-                <ShieldCheck className="w-4 h-4" />
-              ) : isAnalyst ? (
-                <ClipboardCheck className="w-4 h-4" />
-              ) : (
-                <ShieldCheck className="w-4 h-4" />
-              )}
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border bg-[#8B5CF6]/15 text-[#A78BFA] border-[#8B5CF6]/30">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#8B5CF6]" />
             </div>
             <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-xs font-semibold text-slate-100 truncate">
+              <span className="text-xs font-semibold text-[#F5F3FF] truncate">
                 {isAdmin
-                  ? "Admin Control Center"
+                  ? "Admin Control"
                   : isAnalyst
-                  ? "Analyst Portal"
-                  : "MSME Risk AI"}
+                  ? "Analyst Terminal"
+                  : "MSME Portal"}
               </span>
-              <span
-                className={`text-[10px] flex items-center gap-1 font-medium ${
-                  isAdmin
-                    ? "text-purple-400"
-                    : isAnalyst
-                    ? "text-indigo-400"
-                    : "text-cyan-400"
-                }`}
-              >
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    isAdmin
-                      ? "bg-purple-400"
-                      : isAnalyst
-                      ? "bg-indigo-400"
-                      : "bg-cyan-400"
-                  }`}
-                />
+              <span className="text-[10px] flex items-center gap-1 font-mono-numeric text-[#A78BFA]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#8B5CF6]" />
                 {isAdmin
-                  ? "System Administration"
+                  ? "System Admin"
                   : isAnalyst
-                  ? "Credit Risk Analyst"
-                  : "AI-Assisted Credit Risk"}
+                  ? "Risk Underwriter"
+                  : "Active Facility"}
               </span>
             </div>
           </div>
@@ -353,16 +373,16 @@ export default function Sidebar({ active, businessName, userName }: SidebarProps
         </div>
 
         {/* Portal Section Label */}
-        <div className="px-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+        <div className="px-2 pt-1 text-[10px] font-semibold text-[#B7B1D1] uppercase tracking-widest font-mono-numeric">
           {isAdmin
-            ? "Admin Control Center"
+            ? "Platform Control"
             : isAnalyst
-            ? "Risk Underwriting Navigation"
-            : "Business Navigation"}
+            ? "Underwriting Operations"
+            : "Commercial Operations"}
         </div>
 
         {/* Navigation list */}
-        <nav className="flex flex-col gap-1.5" aria-label="Main Navigation">
+        <nav className="flex flex-col gap-1 overflow-y-auto max-h-[calc(100vh-270px)] pr-0.5" aria-label="Main Navigation">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -372,19 +392,19 @@ export default function Sidebar({ active, businessName, userName }: SidebarProps
                   navigate(item.path);
                   setMobileOpen(false);
                 }}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 text-left ${
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-150 text-left ${
                   item.active
-                    ? "bg-gradient-to-r from-blue-600/20 to-cyan-500/15 text-cyan-300 border border-cyan-500/30 shadow-sm shadow-cyan-500/10 font-semibold"
-                    : "text-slate-300 hover:text-white hover:bg-slate-800/60"
+                    ? "bg-[#252141] text-[#F5F3FF] border border-[#8B5CF6]/40 shadow-sm shadow-[#8B5CF6]/15 font-semibold"
+                    : "text-[#B7B1D1] hover:text-[#F5F3FF] hover:bg-[#1C1933] border border-transparent hover:border-[#383154]"
                 }`}
               >
                 <Icon
-                  className={`w-4 h-4 shrink-0 ${
-                    item.active ? "text-cyan-400" : "text-slate-400"
+                  className={`w-3.5 h-3.5 shrink-0 ${
+                    item.active ? "text-[#8B5CF6]" : "text-[#B7B1D1]"
                   }`}
                 />
                 <span className="flex-1 truncate">{item.label}</span>
-                {item.active && <ChevronRight className="w-3.5 h-3.5 text-cyan-400 shrink-0" />}
+                {item.active && <ChevronRight className="w-3 h-3 text-[#A78BFA] shrink-0" />}
               </button>
             );
           })}
@@ -392,40 +412,27 @@ export default function Sidebar({ active, businessName, userName }: SidebarProps
       </div>
 
       {/* Bottom section: User profile & Logout */}
-      <div className="pt-4 border-t border-[#172740] flex flex-col gap-3">
+      <div className="pt-3 border-t border-[#383154] flex flex-col gap-2">
         <div
-          onClick={() => navigate("/settings")}
-          className="flex items-center gap-3 p-2.5 rounded-xl bg-[#0c182a]/70 hover:bg-[#12233c] cursor-pointer transition-colors border border-[#182a44]"
+          onClick={() => navigate(isAdmin ? "/admin/settings" : "/settings")}
+          className="flex items-center gap-2.5 p-2 rounded-xl bg-[#1C1933] hover:bg-[#252141] cursor-pointer transition-colors border border-[#383154] hover:border-[#8B5CF6]/40"
         >
-          <div
-            className={`w-10 h-10 rounded-full text-white font-semibold text-xs flex items-center justify-center shrink-0 shadow-md ${
-              isAdmin
-                ? "bg-gradient-to-tr from-purple-600 to-indigo-600"
-                : isAnalyst
-                ? "bg-gradient-to-tr from-indigo-600 to-cyan-600"
-                : "bg-gradient-to-tr from-cyan-600 to-blue-600"
-            }`}
-          >
+          <div className="w-7 h-7 rounded-lg text-[#F5F3FF] font-semibold text-[11px] font-mono-numeric flex items-center justify-center shrink-0 border bg-[#8B5CF6]/20 text-[#A78BFA] border-[#8B5CF6]/40">
             {userInitials}
           </div>
           <div className="flex flex-col min-w-0 flex-1">
-            <span className="text-xs font-semibold text-white truncate">{userDisplayName}</span>
-            <span className="text-[11px] text-cyan-400 font-medium truncate">
-              {isAdmin ? "Super Admin" : isAnalyst ? "Credit Risk Analyst" : "Business Owner"}
+            <span className="text-xs font-semibold text-[#F5F3FF] truncate">{userDisplayName}</span>
+            <span className="text-[10px] text-[#B7B1D1] font-mono-numeric truncate">
+              {isAdmin ? "Super Admin" : isAnalyst ? "Risk Officer" : (resolvedBizName || "MSME Owner")}
             </span>
-            {isUser && (
-              <span className="text-[10px] text-slate-400 truncate mt-0.5">
-                {resolvedBizName || "My Business"}
-              </span>
-            )}
           </div>
         </div>
 
         <button
           onClick={() => setShowSignOutConfirm(true)}
-          className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors w-full border border-slate-800/80 hover:border-rose-500/30"
+          className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-[#B7B1D1] hover:text-[#F87171] hover:bg-rose-500/10 transition-colors w-full border border-[#383154] hover:border-rose-500/30"
         >
-          <LogOut className="w-3.5 h-3.5 shrink-0" />
+          <LogOut className="w-3 h-3 shrink-0" />
           <span>Logout</span>
         </button>
       </div>
@@ -435,13 +442,13 @@ export default function Sidebar({ active, businessName, userName }: SidebarProps
   return (
     <>
       {/* Mobile Top Navbar with Hamburger */}
-      <div className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-[#081120]/95 backdrop-blur-md border-b border-[#1a2d4b]">
+      <div className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-[#0C0A1D]/95 backdrop-blur-md border-b border-[#383154]">
         <Brand />
         <div className="flex items-center gap-2">
           <NotificationPopover />
           <button
             onClick={() => setMobileOpen(true)}
-            className="p-2 rounded-lg bg-slate-800/80 text-slate-200 hover:text-white border border-slate-700 focus:outline-none"
+            className="p-2 rounded-xl bg-[#1C1933] text-[#F5F3FF] hover:text-white border border-[#383154] focus:outline-none"
             aria-label="Open mobile navigation"
           >
             <Menu className="w-5 h-5" />
@@ -450,7 +457,7 @@ export default function Sidebar({ active, businessName, userName }: SidebarProps
       </div>
 
       {/* Desktop Persistent Sidebar */}
-      <aside className="hidden lg:block w-64 h-screen sticky top-0 shrink-0 z-20">
+      <aside className="hidden lg:block w-[268px] min-w-[268px] h-screen sticky top-0 shrink-0 z-20">
         {sidebarContent}
       </aside>
 
@@ -458,11 +465,11 @@ export default function Sidebar({ active, businessName, userName }: SidebarProps
       {mobileOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
           <div
-            className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity"
+            className="fixed inset-0 bg-[#0C0A1D]/80 backdrop-blur-sm transition-opacity"
             onClick={() => setMobileOpen(false)}
             aria-hidden="true"
           />
-          <div className="relative w-72 max-w-[80vw] h-full bg-[#081120] z-10 shadow-2xl animate-in slide-in-from-left duration-200">
+          <div className="relative w-[275px] max-w-[80vw] h-full bg-[#0C0A1D] z-10 shadow-2xl animate-in slide-in-from-left duration-200">
             {sidebarContent}
           </div>
         </div>

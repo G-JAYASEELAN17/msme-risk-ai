@@ -113,7 +113,7 @@ export default function AdminUsers() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#030712] text-slate-100">
+    <div className="flex min-h-screen bg-[#0C0A1D] text-slate-100">
       <Sidebar active="Users" />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
@@ -128,7 +128,7 @@ export default function AdminUsers() {
 
         <main className="p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
           {/* Header Controls: Search & Role Filters */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b]">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 rounded-2xl bg-[#0C0A1D] border border-[#383154]">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
@@ -136,7 +136,7 @@ export default function AdminUsers() {
                 placeholder="Search by name or email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#0d1c33] border border-[#1d3559] text-sm text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500 transition"
+                className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#1C1933] border border-[#1d3559] text-sm text-white placeholder-slate-400 focus:outline-none focus:border-[#8B5CF6] transition"
               />
               {searchQuery && (
                 <button
@@ -174,8 +174,8 @@ export default function AdminUsers() {
                   onClick={() => setRoleFilter(tab.key)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
                     roleFilter === tab.key
-                      ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
-                      : "bg-[#0d1c33] text-slate-400 hover:text-white border border-[#1d3559]"
+                      ? "bg-[#8B5CF6]/20 text-[#C4B5FD] border border-[#8B5CF6]/40"
+                      : "bg-[#1C1933] text-slate-400 hover:text-white border border-[#1d3559]"
                   }`}
                 >
                   <span>{tab.label}</span>
@@ -187,7 +187,7 @@ export default function AdminUsers() {
 
               <button
                 onClick={loadUsers}
-                className="p-2 rounded-xl bg-[#0d1c33] border border-[#1d3559] text-slate-300 hover:text-white hover:bg-slate-800 transition shrink-0"
+                className="p-2 rounded-xl bg-[#1C1933] border border-[#1d3559] text-slate-300 hover:text-white hover:bg-slate-800 transition shrink-0"
                 title="Refresh user list"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -218,10 +218,10 @@ export default function AdminUsers() {
               }}
             />
           ) : (
-            <div className="rounded-2xl bg-[#081120] border border-[#1a2d4b] overflow-hidden shadow-xl">
+            <div className="rounded-2xl bg-[#0C0A1D] border border-[#383154] overflow-hidden shadow-xl">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm text-slate-300">
-                  <thead className="bg-[#0c182b] text-[11px] uppercase tracking-wider text-slate-400 border-b border-[#1a2d4b]">
+                  <thead className="bg-[#1C1933] text-[11px] uppercase tracking-wider text-slate-400 border-b border-[#383154]">
                     <tr>
                       <th className="py-3 px-4">User</th>
                       <th className="py-3 px-4">Role</th>
@@ -232,7 +232,7 @@ export default function AdminUsers() {
                       <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#162742]">
+                  <tbody className="divide-y divide-[#383154]">
                     {filteredUsers.map((u) => {
                       const isSelf = u.uid === currentAuthUser?.uid;
                       const roleNormalized = (u.role || "user").toLowerCase();
@@ -247,7 +247,7 @@ export default function AdminUsers() {
                                     ? "bg-purple-600/20 text-purple-400 border border-purple-500/30"
                                     : roleNormalized === "analyst"
                                     ? "bg-indigo-600/20 text-indigo-400 border border-indigo-500/30"
-                                    : "bg-cyan-600/20 text-cyan-400 border border-cyan-500/30"
+                                    : "bg-[#8B5CF6]/20 text-[#A78BFA] border border-[#8B5CF6]/30"
                                 }`}
                               >
                                 {(u.name || u.email || "U").slice(0, 2).toUpperCase()}
@@ -273,7 +273,7 @@ export default function AdminUsers() {
                                   ? "bg-purple-500/10 text-purple-400 border-purple-500/30"
                                   : roleNormalized === "analyst"
                                   ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/30"
-                                  : "bg-cyan-500/10 text-cyan-400 border-cyan-500/30"
+                                  : "bg-[#8B5CF6]/10 text-[#A78BFA] border-[#8B5CF6]/30"
                               }`}
                             >
                               {roleNormalized === "admin" ? (
@@ -323,7 +323,7 @@ export default function AdminUsers() {
                                   ? "Cannot change own administrator role"
                                   : "Modify user access role"
                               }
-                              className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-[#0d1c33] text-slate-300 hover:text-cyan-300 hover:bg-[#122544] border border-[#1d3559] transition disabled:opacity-40 disabled:cursor-not-allowed"
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-[#1C1933] text-slate-300 hover:text-[#C4B5FD] hover:bg-[#122544] border border-[#1d3559] transition disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               Change Role
                             </button>
@@ -336,7 +336,7 @@ export default function AdminUsers() {
               </div>
 
               {/* Table Footer */}
-              <div className="p-3.5 bg-[#0c182b] border-t border-[#1a2d4b] text-xs text-slate-400 flex items-center justify-between">
+              <div className="p-3.5 bg-[#1C1933] border-t border-[#383154] text-xs text-slate-400 flex items-center justify-between">
                 <span>Showing {filteredUsers.length} of {users.length} accounts</span>
                 <span className="text-slate-400">All privileged changes recorded in audit log</span>
               </div>
@@ -346,10 +346,10 @@ export default function AdminUsers() {
           {/* Role Change Modal */}
           {showRoleModal && selectedUser && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-              <div className="relative w-full max-w-md bg-[#081120] border border-[#1e3458] rounded-2xl p-6 shadow-2xl">
-                <div className="flex items-center justify-between pb-3 border-b border-[#1a2d4b]">
+              <div className="relative w-full max-w-md bg-[#0C0A1D] border border-[#383154] rounded-2xl p-6 shadow-2xl">
+                <div className="flex items-center justify-between pb-3 border-b border-[#383154]">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-lg bg-[#8B5CF6]/20 text-[#A78BFA] border border-[#8B5CF6]/30 flex items-center justify-center">
                       <Edit2 className="w-4 h-4" />
                     </div>
                     <div>
@@ -366,12 +366,12 @@ export default function AdminUsers() {
                 </div>
 
                 <div className="mt-4 space-y-4">
-                  <div className="p-3 rounded-xl bg-[#0d1c33] border border-[#1d3559] text-xs space-y-1">
+                  <div className="p-3 rounded-xl bg-[#1C1933] border border-[#1d3559] text-xs space-y-1">
                     <div className="text-slate-400">Target User:</div>
                     <div className="font-semibold text-white text-sm">{selectedUser.name || "User"}</div>
                     <div className="text-slate-400">{selectedUser.email}</div>
                     <div className="mt-2 text-slate-400">
-                      Current Role: <span className="text-cyan-400 font-bold uppercase">{selectedUser.role}</span>
+                      Current Role: <span className="text-[#A78BFA] font-bold uppercase">{selectedUser.role}</span>
                     </div>
                   </div>
 
@@ -401,8 +401,8 @@ export default function AdminUsers() {
                           key={item.val}
                           className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition ${
                             newRole === item.val
-                              ? "bg-[#10233f] border-cyan-500/60 text-white"
-                              : "bg-[#0a1527] border-[#182945] text-slate-300 hover:bg-[#0d1b32]"
+                              ? "bg-[#10233f] border-[#8B5CF6]/60 text-white"
+                              : "bg-[#0C0A1D] border-[#182945] text-slate-300 hover:bg-[#1C1933]"
                           }`}
                         >
                           <input
@@ -411,7 +411,7 @@ export default function AdminUsers() {
                             value={item.val}
                             checked={newRole === item.val}
                             onChange={() => setNewRole(item.val as any)}
-                            className="mt-0.5 text-cyan-500 focus:ring-0"
+                            className="mt-0.5 text-[#8B5CF6] focus:ring-0"
                           />
                           <div>
                             <div className="text-xs font-bold">{item.label}</div>
@@ -432,7 +432,7 @@ export default function AdminUsers() {
                   </div>
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-[#1a2d4b] flex justify-end gap-3">
+                <div className="mt-6 pt-4 border-t border-[#383154] flex justify-end gap-3">
                   <button
                     onClick={() => setShowRoleModal(false)}
                     disabled={updatingRole}
@@ -443,7 +443,7 @@ export default function AdminUsers() {
                   <button
                     onClick={handleConfirmRoleChange}
                     disabled={updatingRole || newRole === selectedUser.role}
-                    className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-cyan-600 hover:bg-cyan-500 transition disabled:opacity-50"
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#7C3AED] hover:bg-[#6D28D9] transition disabled:opacity-50"
                   >
                     {updatingRole ? "Saving Role..." : `Confirm Change to ${newRole.toUpperCase()}`}
                   </button>

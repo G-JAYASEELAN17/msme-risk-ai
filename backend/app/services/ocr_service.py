@@ -41,7 +41,7 @@ class MockOCRProvider(OCRProvider):
         # Check if file has raw text (e.g. text/csv/txt or plain ascii embedded)
         try:
             raw_decoded = file_bytes.decode("utf-8", errors="ignore").strip()
-            if len(raw_decoded) > 80 and not any(ord(c) < 9 for c in raw_decoded[:100]):
+            if not raw_decoded.startswith("%PDF") and len(raw_decoded) > 30 and not any(ord(c) < 9 for c in raw_decoded[:30]):
                 return OCRResult(
                     pages=[OCRPageResult(page_number=1, text=raw_decoded, confidence=0.96, provider="mock")],
                     full_text=raw_decoded,

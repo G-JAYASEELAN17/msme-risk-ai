@@ -45,13 +45,13 @@ export const StatCard: React.FC<StatCardProps> = ({
   const renderedIcon = renderIcon();
 
   return (
-    <div className="rounded-xl border border-[#1a2c47] bg-gradient-to-b from-[#0e1b30] to-[#0a1424] p-5 sm:p-6 shadow-lg shadow-black/20 hover:border-[#2b4870] transition-all duration-200">
+    <div className="rounded-xl border border-[#383154] bg-gradient-to-b from-[#1C1933] to-[#1C1933] p-5 sm:p-6 shadow-lg shadow-black/20 hover:border-[#383154] transition-all duration-200">
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
           {displayLabel}
         </span>
         {renderedIcon && (
-          <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-[#8B5CF6]/10 border border-[#8B5CF6]/20 text-[#A78BFA] flex items-center justify-center">
             {renderedIcon}
           </div>
         )}

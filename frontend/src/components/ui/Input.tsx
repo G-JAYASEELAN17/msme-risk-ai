@@ -32,18 +32,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full flex flex-col gap-1.5">
         {label && (
-          <div className="flex justify-between items-center text-xs font-medium text-slate-300">
+          <div className="flex justify-between items-center text-xs font-medium text-[#F5F3FF]">
             <label htmlFor={inputId} className="flex items-center gap-1">
               {label}
-              {required && <span className="text-rose-400 font-bold">*</span>}
+              {required && <span className="text-[#F87171] font-bold">*</span>}
             </label>
-            {unit && <span className="text-[11px] text-slate-400 font-normal">{unit}</span>}
+            {unit && <span className="text-[11px] text-[#B7B1D1] font-normal">{unit}</span>}
           </div>
         )}
 
         <div className="relative flex items-center">
           {leftIcon && (
-            <div className="absolute left-3 text-slate-400 pointer-events-none flex items-center">
+            <div className="absolute left-3 text-[#B7B1D1] pointer-events-none flex items-center">
               {leftIcon}
             </div>
           )}
@@ -52,30 +52,30 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             ref={ref}
             disabled={disabled}
-            className={`w-full rounded-lg bg-[#0a1424] border text-slate-100 placeholder:text-slate-500 text-sm px-3.5 py-2.5 transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
+            className={`w-full rounded-xl bg-[#151229] border text-[#F5F3FF] placeholder:text-[#B7B1D1]/50 text-sm px-3.5 py-2.5 transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
               leftIcon ? "pl-10" : ""
             } ${rightIcon ? "pr-10" : ""} ${
               error
-                ? "border-rose-500/80 focus:border-rose-400 focus:ring-1 focus:ring-rose-500/30"
-                : "border-[#1e324e] hover:border-[#2d4b73] focus:border-[#38bdf8] focus:ring-1 focus:ring-[#38bdf8]/30"
+                ? "border-[#F87171] focus:border-[#F87171] focus:ring-1 focus:ring-[#F87171]/30"
+                : "border-[#383154] hover:border-[#49406B] focus:border-[#8B5CF6] focus:ring-1 focus:ring-[#A78BFA]/30"
             } ${className}`}
             {...props}
           />
 
           {rightIcon && (
-            <div className="absolute right-3 text-slate-400 flex items-center">
+            <div className="absolute right-3 text-[#B7B1D1] flex items-center">
               {rightIcon}
             </div>
           )}
         </div>
 
         {error ? (
-          <p className="flex items-center gap-1 text-xs text-rose-400 mt-0.5">
+          <p className="flex items-center gap-1 text-xs text-[#F87171] mt-0.5">
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             <span>{error}</span>
           </p>
         ) : helperText ? (
-          <p className="text-xs text-slate-400 mt-0.5">{helperText}</p>
+          <p className="text-xs text-[#B7B1D1] mt-0.5">{helperText}</p>
         ) : null}
       </div>
     );

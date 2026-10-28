@@ -1,6 +1,4 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { onAuthStateChanged } from "firebase/auth";
 import {
   FileText,
   ShieldCheck,
@@ -16,64 +14,38 @@ import {
   RefreshCw,
   ExternalLink,
 } from "lucide-react";
-import { auth } from "../services/firebase";
-import { api, ModelCardData, UserProfile } from "../services/api";
+import { api, ModelCardData } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import PageHeader from "../components/PageHeader";
 import Card, { CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import LoadingSpinner from "../components/LoadingSpinner";
 
+import { useAuthRole } from "../context/AuthRoleContext";
+import { useQuery } from "@tanstack/react-query";
+
 export default function ModelCard() {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [card, setCard] = useState<ModelCardData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { user, isAdmin } = useAuthRole();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        navigate("/login");
-        return;
-      }
-      try {
-        const prof = await api.getUserProfile();
-        setProfile(prof);
-        if (prof.role.toLowerCase() !== "admin") {
-          setLoading(false);
-          return;
-        }
-        await loadModelCard();
-      } catch (err: any) {
-        console.error("Auth / profile loading error:", err);
-        setError("Failed to verify administrative privileges.");
-        setLoading(false);
-      }
-    });
-    return () => unsubscribe();
-  }, [navigate]);
+  const {
+    data: card = null,
+    isLoading: loading,
+    error: queryError,
+    refetch: loadModelCard,
+  } = useQuery<ModelCardData>({
+    queryKey: ["admin-model-card"],
+    queryFn: () => api.getAdminModelCard(),
+    staleTime: 5 * 60 * 1000, // 5 minutes cache for static model card metadata
+    enabled: !!user && isAdmin,
+  });
 
-  const loadModelCard = async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const res = await api.getAdminModelCard();
-      setCard(res);
-    } catch (err: any) {
-      console.error("Failed to load model card:", err);
-      setError(err?.message || "Failed to load model card specification.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const isAdmin = profile?.role?.toLowerCase() === "admin";
+  const error = queryError ? (queryError as Error).message : "";
 
   if (!loading && !isAdmin) {
     return (
       <div className="app-layout">
-        <Sidebar active="Settings" />
+        <Sidebar active="Model card" />
         <main className="main-content space-y-6">
           <PageHeader
             badge="Administrative Zone"
@@ -103,7 +75,7 @@ export default function ModelCard() {
 
   return (
     <div className="app-layout">
-      <Sidebar active="Settings" />
+      <Sidebar active="Model card" />
 
       <main className="main-content space-y-6">
         <PageHeader
@@ -115,7 +87,7 @@ export default function ModelCard() {
               <Button
                 variant="outline"
                 size="md"
-                icon={<BarChart3 className="w-4 h-4 text-cyan-400" />}
+                icon={<BarChart3 className="w-4 h-4 text-[#A78BFA]" />}
                 onClick={() => navigate("/admin/model-monitoring")}
               >
                 Model Monitoring
@@ -124,7 +96,7 @@ export default function ModelCard() {
                 variant="outline"
                 size="md"
                 icon={<RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />}
-                onClick={loadModelCard}
+                onClick={() => { void loadModelCard(); }}
               >
                 Refresh Card
               </Button>
@@ -146,9 +118,9 @@ export default function ModelCard() {
         ) : card ? (
           <div className="space-y-6">
             {/* Responsible AI Top Banner */}
-            <div className="p-4 rounded-2xl bg-[#09152b] border border-cyan-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="p-4 rounded-2xl bg-[#0C0A1D] border border-[#8B5CF6]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-start gap-3">
-                <ShieldCheck className="w-6 h-6 text-cyan-400 shrink-0 mt-0.5" />
+                <ShieldCheck className="w-6 h-6 text-[#A78BFA] shrink-0 mt-0.5" />
                 <div>
                   <h4 className="text-sm font-bold text-white uppercase tracking-wider font-['Space_Grotesk']">
                     Mandatory Responsible AI Disclosure
@@ -158,7 +130,7 @@ export default function ModelCard() {
                   </p>
                 </div>
               </div>
-              <span className="shrink-0 px-3 py-1 rounded-lg bg-cyan-950 text-cyan-300 border border-cyan-500/30 text-xs font-mono">
+              <span className="shrink-0 px-3 py-1 rounded-lg bg-[#1C1933] text-[#C4B5FD] border border-[#8B5CF6]/30 text-xs font-mono">
                 Assisted Support Only
               </span>
             </div>
@@ -168,7 +140,7 @@ export default function ModelCard() {
               <Card className="lg:col-span-2 space-y-4">
                 <CardHeader>
                   <div className="flex items-center gap-2.5">
-                    <BrainCircuit className="w-5 h-5 text-cyan-400" />
+                    <BrainCircuit className="w-5 h-5 text-[#A78BFA]" />
                     <div>
                       <CardTitle>Model Overview & Intended Use</CardTitle>
                       <CardDescription>System classification, operational scope, and deployment context</CardDescription>
@@ -198,23 +170,23 @@ export default function ModelCard() {
                   <CardDescription>Source of truth from model registry</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3 text-xs">
-                  <div className="flex justify-between py-1.5 border-b border-[#16273f]">
+                  <div className="flex justify-between py-1.5 border-b border-[#383154]">
                     <span className="text-slate-400">Model Name</span>
                     <span className="font-semibold text-white">{card.model_name}</span>
                   </div>
-                  <div className="flex justify-between py-1.5 border-b border-[#16273f]">
+                  <div className="flex justify-between py-1.5 border-b border-[#383154]">
                     <span className="text-slate-400">Model Version</span>
-                    <span className="font-mono font-bold text-cyan-400">v{card.model_version}</span>
+                    <span className="font-mono font-bold text-[#A78BFA]">v{card.model_version}</span>
                   </div>
-                  <div className="flex justify-between py-1.5 border-b border-[#16273f]">
+                  <div className="flex justify-between py-1.5 border-b border-[#383154]">
                     <span className="text-slate-400">Algorithm</span>
                     <span className="font-semibold text-white">{card.algorithm}</span>
                   </div>
-                  <div className="flex justify-between py-1.5 border-b border-[#16273f]">
+                  <div className="flex justify-between py-1.5 border-b border-[#383154]">
                     <span className="text-slate-400">Features</span>
                     <span className="font-mono text-white">{card.feature_count} inputs</span>
                   </div>
-                  <div className="flex justify-between py-1.5 border-b border-[#16273f]">
+                  <div className="flex justify-between py-1.5 border-b border-[#383154]">
                     <span className="text-slate-400">Training Dataset</span>
                     <span className="text-slate-200">{card.training_dataset}</span>
                   </div>
@@ -241,9 +213,9 @@ export default function ModelCard() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-                  <div className="p-4 rounded-xl bg-[#091322] border border-[#16273f] text-center">
+                  <div className="p-4 rounded-xl bg-[#0C0A1D] border border-[#383154] text-center">
                     <span className="text-xs text-slate-400 font-medium block mb-1">ROC-AUC</span>
-                    <div className="text-2xl font-extrabold text-cyan-400 font-['Space_Grotesk']">
+                    <div className="text-2xl font-extrabold text-[#A78BFA] font-['Space_Grotesk']">
                       {card.evaluation_metrics.roc_auc !== null
                         ? card.evaluation_metrics.roc_auc.toFixed(4)
                         : "—"}
@@ -251,7 +223,7 @@ export default function ModelCard() {
                     <span className="text-[10px] text-slate-400 mt-1 block">Discrimination Power</span>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-[#091322] border border-[#16273f] text-center">
+                  <div className="p-4 rounded-xl bg-[#0C0A1D] border border-[#383154] text-center">
                     <span className="text-xs text-slate-400 font-medium block mb-1">Accuracy</span>
                     <div className="text-2xl font-extrabold text-white font-['Space_Grotesk']">
                       {card.evaluation_metrics.accuracy !== null
@@ -261,7 +233,7 @@ export default function ModelCard() {
                     <span className="text-[10px] text-slate-400 mt-1 block">Overall Concordance</span>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-[#091322] border border-[#16273f] text-center">
+                  <div className="p-4 rounded-xl bg-[#0C0A1D] border border-[#383154] text-center">
                     <span className="text-xs text-slate-400 font-medium block mb-1">Precision</span>
                     <div className="text-2xl font-extrabold text-white font-['Space_Grotesk']">
                       {card.evaluation_metrics.precision !== null
@@ -271,7 +243,7 @@ export default function ModelCard() {
                     <span className="text-[10px] text-slate-400 mt-1 block">Positive Predictive Val</span>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-[#091322] border border-[#16273f] text-center">
+                  <div className="p-4 rounded-xl bg-[#0C0A1D] border border-[#383154] text-center">
                     <span className="text-xs text-slate-400 font-medium block mb-1">Recall</span>
                     <div className="text-2xl font-extrabold text-emerald-400 font-['Space_Grotesk']">
                       {card.evaluation_metrics.recall !== null
@@ -281,7 +253,7 @@ export default function ModelCard() {
                     <span className="text-[10px] text-slate-400 mt-1 block">Default Sensitivity</span>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-[#091322] border border-[#16273f] text-center">
+                  <div className="p-4 rounded-xl bg-[#0C0A1D] border border-[#383154] text-center">
                     <span className="text-xs text-slate-400 font-medium block mb-1">F1 Score</span>
                     <div className="text-2xl font-extrabold text-white font-['Space_Grotesk']">
                       {card.evaluation_metrics.f1_score !== null
@@ -345,7 +317,7 @@ export default function ModelCard() {
                       {card.explainability.categories.map((cat) => (
                         <span
                           key={cat}
-                          className="px-2.5 py-1 rounded-lg bg-[#0c1a2f] border border-[#1a3359] text-cyan-300 text-[11px] font-medium"
+                          className="px-2.5 py-1 rounded-lg bg-[#1C1933] border border-[#383154] text-[#C4B5FD] text-[11px] font-medium"
                         >
                           {cat}
                         </span>
@@ -359,7 +331,7 @@ export default function ModelCard() {
             {/* Section 4: Responsible AI, Fairness & Known Limitations */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
-                <CardHeader className="border-b border-[#16273f]">
+                <CardHeader className="border-b border-[#383154]">
                   <div className="flex items-center gap-2 text-amber-400">
                     <Scale className="w-5 h-5" />
                     <CardTitle className="text-amber-400">Fairness & Responsible AI</CardTitle>
@@ -372,7 +344,7 @@ export default function ModelCard() {
                   <ul className="space-y-2 text-slate-300">
                     {card.fairness_considerations.notes.map((note, i) => (
                       <li key={i} className="flex items-start gap-2">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#A78BFA] shrink-0 mt-0.5" />
                         <span>{note}</span>
                       </li>
                     ))}
@@ -381,7 +353,7 @@ export default function ModelCard() {
               </Card>
 
               <Card>
-                <CardHeader className="border-b border-[#16273f]">
+                <CardHeader className="border-b border-[#383154]">
                   <div className="flex items-center gap-2 text-slate-300">
                     <AlertTriangle className="w-5 h-5 text-rose-400" />
                     <CardTitle>Known Model Limitations</CardTitle>

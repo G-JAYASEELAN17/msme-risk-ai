@@ -23,9 +23,9 @@ import EmptyState from "../../components/ui/EmptyState";
 interface SystemConfigItem {
   name: string;
   category: "Application" | "Authentication" | "AI/ML" | "OCR" | "Notifications" | "Security";
-  status: "Configured" | "Active" | "Disabled" | "Protected";
+  status: "Configured" | "Active" | "Disabled" | "Protected" | "Degraded";
   description: string;
-  badgeType: "emerald" | "cyan" | "purple" | "blue";
+  badgeType: "emerald" | "violet" | "purple" | "blue" | "amber";
 }
 
 export default function AdminSettings() {
@@ -65,9 +65,11 @@ export default function AdminSettings() {
     {
       name: "Primary Database",
       category: "Application",
-      status: "Active",
-      description: `PostgreSQL transactional engine via SQLAlchemy. Connection pool active.`,
-      badgeType: "emerald",
+      status: (health?.database === "healthy" || readiness?.database === "ready") ? "Active" : "Degraded",
+      description: (health?.database === "healthy" || readiness?.database === "ready")
+        ? `${health?.database_type || "PostgreSQL"} transactional engine via SQLAlchemy. Connection pool active.`
+        : `Database connection unavailable (${health?.failure_category || "UNREACHABLE"}). ${health?.message || "Verify connection string & credentials."}`,
+      badgeType: (health?.database === "healthy" || readiness?.database === "ready") ? "emerald" : "amber",
     },
     // 2. Authentication
     {
@@ -90,21 +92,21 @@ export default function AdminSettings() {
       category: "AI/ML",
       status: "Configured",
       description: `Gradient-boosted decision trees (XGBoost 1.1.0). Readiness status: ${readiness?.ml_model || "loaded"}.`,
-      badgeType: "cyan",
+      badgeType: "violet",
     },
     {
       name: "SHAP Explainability Engine",
       category: "AI/ML",
       status: "Active",
       description: "TreeSHAP feature importance computation for positive and negative credit factors.",
-      badgeType: "cyan",
+      badgeType: "violet",
     },
     {
       name: "What-If Simulator",
       category: "AI/ML",
       status: "Active",
       description: "Real-time non-persistent scenario simulation for cash flow and revenue stress testing.",
-      badgeType: "cyan",
+      badgeType: "violet",
     },
     // 4. OCR
     {
@@ -163,7 +165,7 @@ export default function AdminSettings() {
   ] as const;
 
   return (
-    <div className="flex min-h-screen bg-[#030712] text-slate-100">
+    <div className="flex min-h-screen bg-[#0C0A1D] text-slate-100">
       <Sidebar active="System Settings" />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
@@ -178,8 +180,8 @@ export default function AdminSettings() {
 
         <main className="p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
           {/* Security Notice Banner */}
-          <div className="p-4 rounded-2xl bg-[#0a172a] border border-[#1e3458] flex items-start gap-3">
-            <Lock className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+          <div className="p-4 rounded-2xl bg-[#1C1933] border border-[#383154] flex items-start gap-3">
+            <Lock className="w-5 h-5 text-[#A78BFA] shrink-0 mt-0.5" />
             <div className="text-xs">
               <strong className="text-white block font-semibold mb-0.5">
                 Zero-Credential Exposure Policy
@@ -211,11 +213,11 @@ export default function AdminSettings() {
                 return (
                   <div
                     key={cat}
-                    className="p-5 rounded-2xl bg-[#081120] border border-[#1a2d4b] shadow-md space-y-3"
+                    className="p-5 rounded-2xl bg-[#0C0A1D] border border-[#383154] shadow-md space-y-3"
                   >
-                    <div className="flex items-center gap-2 pb-2 border-b border-[#1a2d4b]">
+                    <div className="flex items-center gap-2 pb-2 border-b border-[#383154]">
                       {cat === "Application" ? (
-                        <Server className="w-4 h-4 text-cyan-400" />
+                        <Server className="w-4 h-4 text-[#A78BFA]" />
                       ) : cat === "Authentication" ? (
                         <KeyRound className="w-4 h-4 text-purple-400" />
                       ) : cat === "AI/ML" ? (
@@ -236,7 +238,7 @@ export default function AdminSettings() {
                       {items.map((item) => (
                         <div
                           key={item.name}
-                          className="p-3.5 rounded-xl bg-[#0c182b] border border-[#162742] flex flex-col justify-between space-y-2"
+                          className="p-3.5 rounded-xl bg-[#1C1933] border border-[#383154] flex flex-col justify-between space-y-2"
                         >
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-white">
@@ -246,8 +248,10 @@ export default function AdminSettings() {
                               className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${
                                 item.badgeType === "emerald"
                                   ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                                  : item.badgeType === "cyan"
-                                  ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/30"
+                                  : item.badgeType === "amber"
+                                  ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                                  : item.badgeType === "violet"
+                                  ? "bg-[#8B5CF6]/10 text-[#A78BFA] border-[#8B5CF6]/30"
                                   : item.badgeType === "purple"
                                   ? "bg-purple-500/10 text-purple-400 border-purple-500/30"
                                   : "bg-blue-500/10 text-blue-400 border-blue-500/30"
@@ -257,8 +261,10 @@ export default function AdminSettings() {
                                 className={`w-1.5 h-1.5 rounded-full ${
                                   item.badgeType === "emerald"
                                     ? "bg-emerald-400"
-                                    : item.badgeType === "cyan"
-                                    ? "bg-cyan-400"
+                                    : item.badgeType === "amber"
+                                    ? "bg-amber-400"
+                                    : item.badgeType === "violet"
+                                    ? "bg-[#8B5CF6]"
                                     : item.badgeType === "purple"
                                     ? "bg-purple-400"
                                     : "bg-blue-400"

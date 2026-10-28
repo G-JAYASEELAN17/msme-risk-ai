@@ -26,8 +26,9 @@ import { api, AnalystDashboardStats, AssessmentSummary } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import AnalystHeader from "./analyst/AnalystHeader";
 import EmptyState from "../components/ui/EmptyState";
-import LoadingSpinner from "../components/LoadingSpinner";
-import { Skeleton } from "../components/ui/Skeleton";
+import { RiskBadge } from "../components/ui/Badge";
+import { Skeleton, TableSkeleton, KpiCardSkeleton } from "../components/ui/Skeleton";
+import { useQuery } from "@tanstack/react-query";
 
 interface AnalystDashboardProps {
   initialTab?: "overview" | "queue";
@@ -43,18 +44,6 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
     location.pathname === "/analyst/reviews" ||
     location.search.includes("tab=queue");
 
-  // Metrics
-  const [stats, setStats] = useState<AnalystDashboardStats | null>(null);
-  const [statsLoading, setStatsLoading] = useState(true);
-
-  // Table & Filters
-  const [assessments, setAssessments] = useState<AssessmentSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [riskFilter, setRiskFilter] = useState("ALL");
@@ -62,19 +51,18 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
   const [priorityFilter, setPriorityFilter] = useState("ALL");
   const [dateFilter, setDateFilter] = useState("all");
   const [sortBy, setSortBy] = useState<string>("newest");
+  const [page, setPage] = useState(1);
 
-  // Fetch summary stats
-  const fetchStats = useCallback(async () => {
-    try {
-      setStatsLoading(true);
-      const data = await api.getAnalystDashboardStats();
-      setStats(data);
-    } catch (err: any) {
-      console.error("Failed to load analyst stats:", err);
-    } finally {
-      setStatsLoading(false);
-    }
-  }, []);
+  // TanStack Query: Analyst portfolio stats (30s fresh window)
+  const {
+    data: stats = null,
+    isLoading: statsLoading,
+    refetch: fetchStats,
+  } = useQuery<AnalystDashboardStats>({
+    queryKey: ["analyst-dashboard-stats"],
+    queryFn: () => api.getAnalystDashboardStats(),
+    staleTime: 30 * 1000,
+  });
 
   // Compute date_from based on dateFilter
   const computeDateFrom = useCallback(() => {
@@ -112,16 +100,28 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
     }
   }, [sortBy]);
 
-  // Fetch paginated assessments
-  const fetchAssessments = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError("");
+  const sortParams = computeSortParams();
+  const dateFromIso = computeDateFrom();
 
-      const sortParams = computeSortParams();
-      const dateFromIso = computeDateFrom();
-
-      const res = await api.getAssessmentsPaginated({
+  // TanStack Query: Paginated review queue
+  const {
+    data: queueData,
+    isLoading: loading,
+    error: queryError,
+    refetch: fetchAssessments,
+  } = useQuery({
+    queryKey: [
+      "analyst-assessments",
+      searchQuery,
+      riskFilter,
+      reviewStatusFilter,
+      dateFromIso,
+      sortParams.sort_by,
+      sortParams.sort_order,
+      page,
+    ],
+    queryFn: () =>
+      api.getAssessmentsPaginated({
         q: searchQuery.trim() || undefined,
         risk_level: riskFilter !== "ALL" ? riskFilter : undefined,
         review_status: reviewStatusFilter !== "ALL" ? reviewStatusFilter : undefined,
@@ -131,26 +131,14 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
         page,
         limit: 15,
         all_users: true,
-      });
+      }),
+    staleTime: 30 * 1000,
+  });
 
-      setAssessments(res.items || []);
-      setTotalPages(res.total_pages || 1);
-      setTotalCount(res.total || 0);
-    } catch (err: any) {
-      console.error("Failed to load analyst review queue:", err);
-      setError(err?.message || "Failed to load assessments. Please verify analyst authorization.");
-    } finally {
-      setLoading(false);
-    }
-  }, [searchQuery, riskFilter, reviewStatusFilter, computeDateFrom, computeSortParams, page]);
-
-  useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
-
-  useEffect(() => {
-    fetchAssessments();
-  }, [fetchAssessments]);
+  const assessments = queueData?.items || [];
+  const totalPages = queueData?.total_pages || 1;
+  const totalCount = queueData?.total || 0;
+  const error = queryError ? (queryError as Error).message : "";
 
   const handleResetFilters = () => {
     setSearchQuery("");
@@ -194,7 +182,7 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
   const highPct = Math.round((highRiskCount / totalRiskCount) * 100);
 
   return (
-    <div className="flex min-h-screen bg-[#030712] text-slate-100">
+    <div className="flex min-h-screen bg-[#0C0A1D] text-slate-100">
       <Sidebar active={isQueueOnly ? "Review Queue" : "Analyst"} />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
@@ -212,7 +200,7 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
           {/* Section 28: Responsible AI Notice */}
           <div className="p-3.5 rounded-2xl bg-indigo-950/30 border border-indigo-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2.5 text-indigo-300">
-              <BrainCircuit className="w-4 h-4 text-cyan-400 shrink-0" />
+              <BrainCircuit className="w-4 h-4 text-[#A78BFA] shrink-0" />
               <span>
                 <strong>AI-Assisted Credit Risk Assessment:</strong> Provides decision support telemetry; does not autonomously approve or reject credit. Final credit underwriting decisions remain human-in-the-loop.
               </span>
@@ -222,7 +210,7 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
                 fetchStats();
                 fetchAssessments();
               }}
-              className="p-1.5 rounded-lg bg-[#0d1c33] border border-[#1e3458] text-slate-300 hover:text-white transition self-end sm:self-auto shrink-0"
+              className="p-1.5 rounded-lg bg-[#1C1933] border border-[#383154] text-slate-300 hover:text-white transition self-end sm:self-auto shrink-0"
               title="Refresh Data"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
@@ -240,7 +228,7 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
 
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
               {/* Total Assessments */}
-              <div className="p-3.5 rounded-2xl bg-[#081120] border border-[#1a2d4b] flex flex-col justify-between">
+              <div className="p-3.5 rounded-2xl bg-[#0C0A1D] border border-[#383154] flex flex-col justify-between">
                 <span className="text-[11px] font-semibold text-slate-400">Total Assessments</span>
                 <div className="mt-2 text-xl font-bold text-white">
                   {statsLoading ? "..." : (stats?.total_assessments ?? 0)}
@@ -254,7 +242,7 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
                   setReviewStatusFilter("pending");
                   setPage(1);
                 }}
-                className="p-3.5 rounded-2xl bg-[#081120] border border-amber-500/30 hover:border-amber-400 cursor-pointer transition flex flex-col justify-between"
+                className="p-3.5 rounded-2xl bg-[#0C0A1D] border border-amber-500/30 hover:border-amber-400 cursor-pointer transition flex flex-col justify-between"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-semibold text-amber-300">Pending Reviews</span>
@@ -272,7 +260,7 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
                   setReviewStatusFilter("in_review");
                   setPage(1);
                 }}
-                className="p-3.5 rounded-2xl bg-[#081120] border border-blue-500/30 hover:border-blue-400 cursor-pointer transition flex flex-col justify-between"
+                className="p-3.5 rounded-2xl bg-[#0C0A1D] border border-blue-500/30 hover:border-blue-400 cursor-pointer transition flex flex-col justify-between"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-semibold text-blue-300">In Review</span>
@@ -290,7 +278,7 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
                   setReviewStatusFilter("approved");
                   setPage(1);
                 }}
-                className="p-3.5 rounded-2xl bg-[#081120] border border-emerald-500/30 hover:border-emerald-400 cursor-pointer transition flex flex-col justify-between"
+                className="p-3.5 rounded-2xl bg-[#0C0A1D] border border-emerald-500/30 hover:border-emerald-400 cursor-pointer transition flex flex-col justify-between"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-semibold text-emerald-300">Completed</span>
@@ -308,7 +296,7 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
                   setRiskFilter("LOW");
                   setPage(1);
                 }}
-                className="p-3.5 rounded-2xl bg-[#081120] border border-[#1a2d4b] hover:border-emerald-500/40 cursor-pointer transition flex flex-col justify-between"
+                className="p-3.5 rounded-2xl bg-[#0C0A1D] border border-[#383154] hover:border-emerald-500/40 cursor-pointer transition flex flex-col justify-between"
               >
                 <span className="text-[11px] font-semibold text-slate-400">Low Risk</span>
                 <div className="mt-2 text-xl font-bold text-emerald-400">
@@ -323,7 +311,7 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
                   setRiskFilter("MEDIUM");
                   setPage(1);
                 }}
-                className="p-3.5 rounded-2xl bg-[#081120] border border-[#1a2d4b] hover:border-amber-500/40 cursor-pointer transition flex flex-col justify-between"
+                className="p-3.5 rounded-2xl bg-[#0C0A1D] border border-[#383154] hover:border-amber-500/40 cursor-pointer transition flex flex-col justify-between"
               >
                 <span className="text-[11px] font-semibold text-slate-400">Medium Risk</span>
                 <div className="mt-2 text-xl font-bold text-amber-400">
@@ -338,7 +326,7 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
                   setRiskFilter("HIGH");
                   setPage(1);
                 }}
-                className="p-3.5 rounded-2xl bg-[#081120] border border-[#1a2d4b] hover:border-rose-500/40 cursor-pointer transition flex flex-col justify-between"
+                className="p-3.5 rounded-2xl bg-[#0C0A1D] border border-[#383154] hover:border-rose-500/40 cursor-pointer transition flex flex-col justify-between"
               >
                 <span className="text-[11px] font-semibold text-slate-400">High Risk</span>
                 <div className="mt-2 text-xl font-bold text-rose-400">
@@ -353,13 +341,13 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
                   setReviewStatusFilter("needs_info");
                   setPage(1);
                 }}
-                className="p-3.5 rounded-2xl bg-[#081120] border border-cyan-500/30 hover:border-cyan-400 cursor-pointer transition flex flex-col justify-between"
+                className="p-3.5 rounded-2xl bg-[#0C0A1D] border border-[#8B5CF6]/30 hover:border-[#8B5CF6] cursor-pointer transition flex flex-col justify-between"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-cyan-300">Needs Info</span>
-                  <FileText className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="text-[11px] font-semibold text-[#C4B5FD]">Needs Info</span>
+                  <FileText className="w-3.5 h-3.5 text-[#A78BFA]" />
                 </div>
-                <div className="mt-2 text-xl font-bold text-cyan-400">
+                <div className="mt-2 text-xl font-bold text-[#A78BFA]">
                   {statsLoading ? "..." : (stats?.needs_info_assessments ?? 0)}
                 </div>
                 <span className="text-[10px] text-slate-400 mt-0.5">Docs requested</span>
@@ -368,7 +356,7 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
           </section>
 
           {/* Section 4 & 5: ASSESSMENT REVIEW QUEUE TOOLBAR & FILTERS */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-[#081120] border border-[#1a2d4b] space-y-4 shadow-md">
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#0C0A1D] border border-[#383154] space-y-4 shadow-md">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
@@ -383,7 +371,7 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleResetFilters}
-                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#0d1c33] border border-[#1d3559] text-slate-300 hover:text-white transition"
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#1C1933] border border-[#383154] text-slate-300 hover:text-white transition"
                 >
                   Reset Filters
                 </button>
@@ -391,7 +379,7 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
             </div>
 
             {/* Filter Controls Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 pt-2 border-t border-[#1a2d4b]/60">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 pt-2 border-t border-[#383154]/60">
               {/* Search */}
               <div className="relative lg:col-span-2">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -403,7 +391,7 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
                     setSearchQuery(e.target.value);
                     setPage(1);
                   }}
-                  className="w-full pl-9 pr-3 py-2 bg-[#0d1c33] border border-[#1d3559] rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500"
+                  className="w-full pl-9 pr-3 py-2 bg-[#1C1933] border border-[#383154] rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#8B5CF6]"
                 />
                 {searchQuery && (
                   <button
@@ -423,7 +411,7 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
                     setRiskFilter(e.target.value);
                     setPage(1);
                   }}
-                  className="w-full px-3 py-2 bg-[#0d1c33] border border-[#1d3559] rounded-xl text-xs font-semibold text-slate-200 focus:outline-none focus:border-cyan-500"
+                  className="w-full px-3 py-2 bg-[#1C1933] border border-[#383154] rounded-xl text-xs font-semibold text-slate-200 focus:outline-none focus:border-[#8B5CF6]"
                 >
                   <option value="ALL">All Risk Tiers</option>
                   <option value="LOW">Low Risk</option>
@@ -440,7 +428,7 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
                     setReviewStatusFilter(e.target.value);
                     setPage(1);
                   }}
-                  className="w-full px-3 py-2 bg-[#0d1c33] border border-[#1d3559] rounded-xl text-xs font-semibold text-slate-200 focus:outline-none focus:border-cyan-500"
+                  className="w-full px-3 py-2 bg-[#1C1933] border border-[#383154] rounded-xl text-xs font-semibold text-slate-200 focus:outline-none focus:border-[#8B5CF6]"
                 >
                   <option value="ALL">All Statuses</option>
                   <option value="pending">Pending</option>
@@ -456,12 +444,12 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
                 <select
                   value={priorityFilter}
                   onChange={(e) => setPriorityFilter(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#0d1c33] border border-[#1d3559] rounded-xl text-xs font-semibold text-slate-200 focus:outline-none focus:border-cyan-500"
+                  className="w-full px-3 py-1.5 bg-[#1C1933] border border-[#383154] rounded-lg text-xs font-medium text-slate-200 focus:outline-none focus:border-[#8B5CF6] font-mono-numeric"
                 >
                   <option value="ALL">All Priorities</option>
-                  <option value="HIGH">🔴 High Priority</option>
-                  <option value="NORMAL">🟡 Normal Priority</option>
-                  <option value="LOW">🟢 Low Priority</option>
+                  <option value="HIGH">High Priority</option>
+                  <option value="NORMAL">Normal Priority</option>
+                  <option value="LOW">Low Priority</option>
                 </select>
               </div>
 
@@ -473,7 +461,7 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
                     setSortBy(e.target.value);
                     setPage(1);
                   }}
-                  className="w-full px-3 py-2 bg-[#0d1c33] border border-[#1d3559] rounded-xl text-xs font-semibold text-slate-200 focus:outline-none focus:border-cyan-500"
+                  className="w-full px-3 py-1.5 bg-[#1C1933] border border-[#383154] rounded-lg text-xs font-medium text-slate-200 focus:outline-none focus:border-[#8B5CF6] font-mono-numeric"
                 >
                   <option value="newest">Sort: Newest First</option>
                   <option value="oldest">Sort: Oldest First</option>
@@ -486,42 +474,40 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
           </div>
 
           {/* Section 4: REVIEW QUEUE TABLE */}
-          <div className="rounded-2xl bg-[#081120] border border-[#1a2d4b] overflow-hidden shadow-xl">
+          <div className="rounded-xl bg-[#1C1933] border border-[#383154] overflow-hidden shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]">
             {loading ? (
-              <div className="p-12 flex justify-center">
-                <LoadingSpinner text="Loading underwriter review queue..." />
-              </div>
+              <TableSkeleton rows={8} columns={8} />
             ) : error ? (
               <EmptyState
                 title="Unable to load review queue"
                 description={error}
                 actionLabel="Retry Queue"
-                onAction={fetchAssessments}
+                onAction={() => { void fetchAssessments(); }}
               />
             ) : filteredAssessments.length === 0 ? (
               <EmptyState
-                title="You're all caught up"
+                title="Queue is currently clear"
                 description="No MSME applications currently match your queue filters."
                 actionLabel="Clear Filters"
                 onAction={handleResetFilters}
               />
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm text-slate-300">
-                  <thead className="bg-[#0c182b] text-[11px] uppercase tracking-wider text-slate-400 border-b border-[#1a2d4b]">
+                <table className="w-full text-left text-xs text-slate-300">
+                  <thead className="bg-[#1C1933] text-[10px] uppercase tracking-wider text-slate-400 border-b border-[#383154] font-mono-numeric">
                     <tr>
-                      <th className="py-3 px-4">Business</th>
-                      <th className="py-3 px-4">Priority</th>
-                      <th className="py-3 px-4">Risk Level</th>
-                      <th className="py-3 px-4">Score</th>
-                      <th className="py-3 px-4">Default Prob</th>
-                      <th className="py-3 px-4">Data Quality</th>
-                      <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4">Submitted</th>
-                      <th className="py-3 px-4 text-right">Action</th>
+                      <th className="py-2.5 px-3.5">Commercial Entity</th>
+                      <th className="py-2.5 px-3.5">Priority</th>
+                      <th className="py-2.5 px-3.5">Risk Level</th>
+                      <th className="py-2.5 px-3.5">Score</th>
+                      <th className="py-2.5 px-3.5">Default Prob</th>
+                      <th className="py-2.5 px-3.5">Data Quality</th>
+                      <th className="py-2.5 px-3.5">Workflow Status</th>
+                      <th className="py-2.5 px-3.5">Submitted</th>
+                      <th className="py-2.5 px-3.5 text-right">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#162742]">
+                  <tbody className="divide-y divide-[#383154]/80">
                     {filteredAssessments.map((a) => {
                       const priority = getPriority(a);
                       const riskScore = Math.max(0, Math.round(100 - a.default_probability));
@@ -530,41 +516,41 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
                       return (
                         <tr
                           key={a.id}
-                          className="hover:bg-slate-800/25 transition cursor-pointer"
+                          className="hover:bg-[#252141] transition-colors cursor-pointer"
                           onClick={() => navigate(`/analyst/review/${a.id}`)}
                         >
                           {/* Business */}
-                          <td className="py-3.5 px-4">
+                          <td className="py-3 px-3.5">
                             <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0">
+                              <div className="w-7 h-7 rounded-md bg-[#252141] border border-[#383154] text-[#A78BFA] flex items-center justify-center font-medium text-xs font-mono-numeric shrink-0">
                                 {(a.business_name || "B").slice(0, 2).toUpperCase()}
                               </div>
                               <div className="min-w-0">
-                                <div className="font-semibold text-white truncate max-w-[200px] hover:text-cyan-300 transition">
+                                <div className="font-medium text-white truncate max-w-[200px] hover:text-[#C4B5FD] transition">
                                   {a.business_name || `MSME Application #${a.id}`}
                                 </div>
-                                <div className="text-[11px] text-slate-400 truncate">
-                                  ID #{a.id} • {a.industry || "General Industry"}
+                                <div className="text-[10px] text-slate-400 truncate font-mono-numeric">
+                                  Ref #{a.id} • {a.industry || "General Industry"}
                                 </div>
                               </div>
                             </div>
                           </td>
 
                           {/* Priority */}
-                          <td className="py-3.5 px-4">
+                          <td className="py-3 px-3.5">
                             <span
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border uppercase ${
+                              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono-numeric font-medium border uppercase ${
                                 priority.color === "rose"
-                                  ? "bg-rose-500/10 text-rose-400 border-rose-500/30"
+                                  ? "bg-rose-500/10 text-rose-400 border-rose-500/25"
                                   : priority.color === "amber"
-                                  ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
-                                  : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                                  ? "bg-amber-500/10 text-amber-400 border-amber-500/25"
+                                  : "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
                               }`}
                             >
                               <span
                                 className={`w-1.5 h-1.5 rounded-full ${
                                   priority.color === "rose"
-                                    ? "bg-rose-400 animate-pulse"
+                                    ? "bg-rose-400"
                                     : priority.color === "amber"
                                     ? "bg-amber-400"
                                     : "bg-emerald-400"
@@ -575,74 +561,68 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
                           </td>
 
                           {/* Risk Level */}
-                          <td className="py-3.5 px-4">
-                            <span
-                              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold uppercase border ${
-                                riskLower === "low"
-                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                                  : riskLower === "high"
-                                  ? "bg-rose-500/10 text-rose-400 border-rose-500/30"
-                                  : "bg-amber-500/10 text-amber-400 border-amber-500/30"
-                              }`}
-                            >
-                              {a.risk_level || "Medium"}
+                          <td className="py-3 px-3.5">
+                            <RiskBadge level={a.risk_level} size="sm" />
+                          </td>
+
+                          {/* Score */}
+                          <td className="py-3 px-3.5 font-mono-numeric font-semibold text-white tabular-nums">
+                            {riskScore}
+                            <span className="text-[10px] text-slate-400 font-normal">/100</span>
+                          </td>
+
+                          {/* Default Prob */}
+                          <td className="py-3 px-3.5 font-mono-numeric text-slate-300 tabular-nums">
+                            {a.default_probability.toFixed(1)}%
+                          </td>
+
+                          {/* Data Quality */}
+                          <td className="py-3 px-3.5">
+                            <span className="text-[11px] font-mono-numeric text-slate-300">
+                              {a.data_quality_tier || "Standard"}
                             </span>
                           </td>
 
-                          {/* Risk Score */}
-                          <td className="py-3.5 px-4 font-bold text-white text-xs">
-                            {riskScore} / 100
-                          </td>
-
-                          {/* Default Probability */}
-                          <td className="py-3.5 px-4 font-mono text-xs text-slate-300">
-                            {a.default_probability !== undefined && a.default_probability !== null
-                              ? `${a.default_probability.toFixed(1)}%`
-                              : "—"}
-                          </td>
-
-                          {/* Data Quality Tier */}
-                          <td className="py-3.5 px-4 text-xs font-semibold text-emerald-400">
-                            High (Tier 1)
-                          </td>
-
-                          {/* Review Status */}
-                          <td className="py-3.5 px-4">
+                          {/* Status */}
+                          <td className="py-3 px-3.5">
                             <span
-                              className={`text-xs font-medium capitalize ${
+                              className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono-numeric font-medium uppercase ${
                                 a.review_status === "approved"
-                                  ? "text-emerald-400"
-                                  : a.review_status === "rejected"
-                                  ? "text-rose-400"
+                                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/25"
                                   : a.review_status === "in_review"
-                                  ? "text-blue-400"
+                                  ? "bg-blue-500/10 text-blue-300 border border-blue-500/25"
                                   : a.review_status === "needs_info"
-                                  ? "text-amber-400"
-                                  : "text-slate-400"
+                                  ? "bg-amber-500/10 text-amber-300 border border-amber-500/25"
+                                  : a.review_status === "rejected"
+                                  ? "bg-rose-500/10 text-rose-400 border border-rose-500/25"
+                                  : "bg-slate-800/40 text-slate-400 border border-slate-700/50"
                               }`}
                             >
-                              {a.review_status?.replace("_", " ") || "Pending"}
+                              {a.review_status === "approved"
+                                ? "Approved"
+                                : a.review_status === "in_review"
+                                ? "In Review"
+                                : a.review_status === "needs_info"
+                                ? "Needs Info"
+                                : a.review_status === "rejected"
+                                ? "Rejected"
+                                : "Pending"}
                             </span>
                           </td>
 
-                          {/* Submitted Date */}
-                          <td className="py-3.5 px-4 text-xs text-slate-400">
-                            {a.created_at
-                              ? new Date(a.created_at).toLocaleDateString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                })
-                              : "—"}
+                          {/* Submitted */}
+                          <td className="py-3 px-3.5 text-slate-400 font-mono-numeric text-[11px]">
+                            {new Date(a.created_at).toLocaleDateString()}
                           </td>
 
                           {/* Action */}
-                          <td className="py-3.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                          <td className="py-3 px-3.5 text-right" onClick={(e) => e.stopPropagation()}>
                             <button
                               onClick={() => navigate(`/analyst/review/${a.id}`)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 shadow transition"
+                              className="px-2.5 py-1 rounded bg-[#1C1933] hover:bg-[#252141] text-[#C4B5FD] border border-[#383154] hover:border-[#383154] text-[11px] font-mono-numeric inline-flex items-center gap-1 transition-colors"
                             >
-                              <span>Review</span>
-                              <ArrowRight className="w-3.5 h-3.5" />
+                              <span>Dossier</span>
+                              <ArrowRight className="w-3 h-3" />
                             </button>
                           </td>
                         </tr>
@@ -655,7 +635,7 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-[#1a2d4b] bg-[#0c182b] text-xs text-slate-400">
+              <div className="flex items-center justify-between px-4 py-3 border-t border-[#383154] bg-[#1C1933] text-xs text-slate-400 font-mono-numeric tabular-nums">
                 <span>
                   Showing {filteredAssessments.length} of {totalCount} queue applications (Page {page} of {totalPages})
                 </span>
@@ -664,14 +644,14 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
                   <button
                     disabled={page <= 1 || loading}
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    className="p-1.5 rounded-lg bg-[#0d1c33] border border-[#1d3559] text-slate-300 hover:text-white disabled:opacity-40 transition"
+                    className="p-1.5 rounded-lg bg-[#252141] border border-[#383154] text-slate-300 hover:text-white disabled:opacity-40 transition"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     disabled={page >= totalPages || loading}
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    className="p-1.5 rounded-lg bg-[#0d1c33] border border-[#1d3559] text-slate-300 hover:text-white disabled:opacity-40 transition"
+                    className="p-1.5 rounded-lg bg-[#252141] border border-[#383154] text-slate-300 hover:text-white disabled:opacity-40 transition"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -682,7 +662,7 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
 
           {/* Section 29: Bottom Quick Intelligence & Portfolio Overview */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-5 rounded-2xl bg-[#081120] border border-[#1a2d4b] space-y-3">
+            <div className="p-5 rounded-2xl bg-[#0C0A1D] border border-[#383154] space-y-3">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
                 Portfolio Risk Exposure
               </h4>
@@ -707,7 +687,7 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
               </div>
             </div>
 
-            <div className="p-5 rounded-2xl bg-[#081120] border border-[#1a2d4b] flex flex-col justify-between">
+            <div className="p-5 rounded-2xl bg-[#0C0A1D] border border-[#383154] flex flex-col justify-between">
               <div>
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
                   Underwriter Actions Shortcut
@@ -719,7 +699,7 @@ export default function AnalystDashboard({ initialTab }: AnalystDashboardProps) 
               <div className="pt-3 flex gap-2">
                 <button
                   onClick={() => navigate("/prediction?simulator=open")}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#0d1c33] text-cyan-300 border border-[#1d3559] hover:bg-cyan-500/10 transition"
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#1C1933] text-[#C4B5FD] border border-[#383154] hover:bg-[#8B5CF6]/10 transition"
                 >
                   Open Scenario Simulator →
                 </button>

@@ -103,12 +103,12 @@ export default function DemoPage() {
       case "high":
         return "text-rose-400 bg-rose-950/40 border-rose-800";
       default:
-        return "text-cyan-400 bg-cyan-950/40 border-cyan-800";
+        return "text-[#A78BFA] bg-[#8B5CF6]/10 border-[#383154]";
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#060b14] text-slate-100 flex flex-col selection:bg-cyan-500/20">
+    <div className="min-h-screen bg-[#0C0A1D] text-slate-100 flex flex-col selection:bg-[#8B5CF6]/20">
       <SEO
         title="Interactive Public Demo | MSME Risk AI"
         description="Experience MSME Risk AI with safe synthetic data. Explore real-time XGBoost default probability, SHAP factor attribution, and What-If scenario simulations."
@@ -119,7 +119,7 @@ export default function DemoPage() {
       <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Banner */}
         <div className="text-center max-w-3xl mx-auto mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-800 text-cyan-300 text-xs font-semibold mb-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#8B5CF6]/15 border border-[#383154] text-[#C4B5FD] text-xs font-semibold mb-3">
             <Sparkles className="w-3.5 h-3.5" /> Interactive Public Sandbox
           </div>
           <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
@@ -158,20 +158,20 @@ export default function DemoPage() {
 
         {loadingSample ? (
           <div className="text-center py-20">
-            <RefreshCw className="w-8 h-8 text-cyan-400 animate-spin mx-auto mb-3" />
+            <RefreshCw className="w-8 h-8 text-[#A78BFA] animate-spin mx-auto mb-3" />
             <p className="text-sm text-slate-400">Loading synthetic demonstration profile...</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* LEFT COLUMN: Business & Financial Inputs (5 cols) */}
             <div className="lg:col-span-5 space-y-6">
-              <div className="p-6 rounded-2xl bg-[#091426] border border-[#182c47]">
+              <div className="p-6 rounded-2xl bg-[#1C1933] border border-[#383154]">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <Building2 className="w-5 h-5 text-cyan-400" />
+                    <Building2 className="w-5 h-5 text-[#A78BFA]" />
                     <h2 className="text-base font-bold text-white">MSME Business Profile</h2>
                   </div>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-950 text-cyan-300 border border-cyan-800">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#1C1933] text-[#C4B5FD] border border-[#383154]">
                     Synthetic
                   </span>
                 </div>
@@ -184,7 +184,7 @@ export default function DemoPage() {
                         type="text"
                         value={businessData.business_name}
                         disabled
-                        className="w-full px-3 py-2 rounded-lg bg-[#060d19] border border-[#1b3252] text-slate-200 text-xs font-semibold cursor-not-allowed"
+                        className="w-full px-3 py-2 rounded-lg bg-[#0C0A1D] border border-[#1b3252] text-slate-200 text-xs font-semibold cursor-not-allowed"
                       />
                     </div>
 
@@ -195,7 +195,7 @@ export default function DemoPage() {
                           type="text"
                           value={businessData.industry_sector}
                           disabled
-                          className="w-full px-3 py-2 rounded-lg bg-[#060d19] border border-[#1b3252] text-slate-200 text-xs cursor-not-allowed"
+                          className="w-full px-3 py-2 rounded-lg bg-[#0C0A1D] border border-[#1b3252] text-slate-200 text-xs cursor-not-allowed"
                         />
                       </div>
                       <div>
@@ -209,12 +209,12 @@ export default function DemoPage() {
                               years_in_business: Number(e.target.value)
                             })
                           }
-                          className="w-full px-3 py-2 rounded-lg bg-[#060d19] border border-[#1b3252] text-white text-xs focus:outline-none focus:border-cyan-500"
+                          className="w-full px-3 py-2 rounded-lg bg-[#0C0A1D] border border-[#1b3252] text-white text-xs focus:outline-none focus:border-[#8B5CF6]"
                         />
                       </div>
                     </div>
 
-                    <div className="border-t border-[#13233b] pt-4">
+                    <div className="border-t border-[#383154] pt-4">
                       <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
                         Financial Parameters (INR)
                       </h3>
@@ -231,7 +231,7 @@ export default function DemoPage() {
                                 annual_revenue: Number(e.target.value)
                               })
                             }
-                            className="w-full px-3 py-2 rounded-lg bg-[#060d19] border border-[#1b3252] text-white text-xs focus:outline-none focus:border-cyan-500"
+                            className="w-full px-3 py-2 rounded-lg bg-[#0C0A1D] border border-[#1b3252] text-white text-xs focus:outline-none focus:border-[#8B5CF6]"
                           />
                         </div>
 
@@ -247,7 +247,7 @@ export default function DemoPage() {
                                   monthly_cash_flow: Number(e.target.value)
                                 })
                               }
-                              className="w-full px-3 py-2 rounded-lg bg-[#060d19] border border-[#1b3252] text-white text-xs focus:outline-none focus:border-cyan-500"
+                              className="w-full px-3 py-2 rounded-lg bg-[#0C0A1D] border border-[#1b3252] text-white text-xs focus:outline-none focus:border-[#8B5CF6]"
                             />
                           </div>
                           <div>
@@ -261,7 +261,7 @@ export default function DemoPage() {
                                   existing_debt: Number(e.target.value)
                                 })
                               }
-                              className="w-full px-3 py-2 rounded-lg bg-[#060d19] border border-[#1b3252] text-white text-xs focus:outline-none focus:border-cyan-500"
+                              className="w-full px-3 py-2 rounded-lg bg-[#0C0A1D] border border-[#1b3252] text-white text-xs focus:outline-none focus:border-[#8B5CF6]"
                             />
                           </div>
                         </div>
@@ -280,7 +280,7 @@ export default function DemoPage() {
                                   utility_payment_score: Number(e.target.value)
                                 })
                               }
-                              className="w-full px-3 py-2 rounded-lg bg-[#060d19] border border-[#1b3252] text-white text-xs focus:outline-none focus:border-cyan-500"
+                              className="w-full px-3 py-2 rounded-lg bg-[#0C0A1D] border border-[#1b3252] text-white text-xs focus:outline-none focus:border-[#8B5CF6]"
                             />
                           </div>
                           <div>
@@ -293,7 +293,7 @@ export default function DemoPage() {
                                   past_defaults_count: Number(e.target.value)
                                 })
                               }
-                              className="w-full px-3 py-2 rounded-lg bg-[#060d19] border border-[#1b3252] text-white text-xs focus:outline-none focus:border-cyan-500"
+                              className="w-full px-3 py-2 rounded-lg bg-[#0C0A1D] border border-[#1b3252] text-white text-xs focus:outline-none focus:border-[#8B5CF6]"
                             >
                               <option value={0}>0 Defaults</option>
                               <option value={1}>1 Default</option>
@@ -325,8 +325,8 @@ export default function DemoPage() {
               </div>
 
               {/* Security & Isolation Reminder */}
-              <div className="p-4 rounded-xl bg-[#091426]/60 border border-[#14233a] text-xs text-slate-400 flex items-start gap-2.5">
-                <Scale className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+              <div className="p-4 rounded-xl bg-[#1C1933]/60 border border-[#14233a] text-xs text-slate-400 flex items-start gap-2.5">
+                <Scale className="w-4 h-4 text-[#A78BFA] shrink-0 mt-0.5" />
                 <p>
                   In this public demo, calculations run in ephemeral memory without writing to database storage.
                 </p>
@@ -338,7 +338,7 @@ export default function DemoPage() {
               {assessmentResult && (
                 <>
                   {/* Score & Risk Tier Card */}
-                  <div className="p-6 rounded-2xl bg-[#091426] border border-[#182c47]">
+                  <div className="p-6 rounded-2xl bg-[#1C1933] border border-[#383154]">
                     <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
                       <div>
                         <span className="text-xs uppercase tracking-wider text-slate-400 font-semibold">
@@ -359,36 +359,36 @@ export default function DemoPage() {
 
                     {/* Gauges Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                      <div className="p-4 rounded-xl bg-[#060d19] border border-[#14243b] text-center">
+                      <div className="p-4 rounded-xl bg-[#0C0A1D] border border-[#383154] text-center">
                         <div className="text-xs text-slate-400 mb-1">Risk Score</div>
-                        <div className="text-3xl font-black text-cyan-400">
+                        <div className="text-3xl font-black text-[#A78BFA]">
                           {assessmentResult.risk_score}
                           <span className="text-xs text-slate-500 font-normal"> / 100</span>
                         </div>
                         <div className="text-[11px] text-slate-500 mt-1">Higher = Greater Risk</div>
                       </div>
 
-                      <div className="p-4 rounded-xl bg-[#060d19] border border-[#14243b] text-center">
+                      <div className="p-4 rounded-xl bg-[#0C0A1D] border border-[#383154] text-center">
                         <div className="text-xs text-slate-400 mb-1">12-Mo Default Prob</div>
                         <div className="text-3xl font-black text-white">
-                          {(assessmentResult.default_probability * 100).toFixed(1)}%
+                          {(assessmentResult.default_probability <= 1 ? assessmentResult.default_probability * 100 : assessmentResult.default_probability).toFixed(1)}%
                         </div>
                         <div className="text-[11px] text-slate-500 mt-1">XGBoost Calibrated</div>
                       </div>
 
-                      <div className="p-4 rounded-xl bg-[#060d19] border border-[#14243b] text-center">
+                      <div className="p-4 rounded-xl bg-[#0C0A1D] border border-[#383154] text-center">
                         <div className="text-xs text-slate-400 mb-1">Model Confidence</div>
                         <div className="text-3xl font-black text-emerald-400">
-                          {(assessmentResult.confidence_score * 100).toFixed(0)}%
+                          {(assessmentResult.confidence_score <= 1 ? assessmentResult.confidence_score * 100 : assessmentResult.confidence_score).toFixed(0)}%
                         </div>
                         <div className="text-[11px] text-slate-500 mt-1">Certainty Metric</div>
                       </div>
                     </div>
 
                     {/* SHAP Explainability Breakdown */}
-                    <div className="border-t border-[#13233b] pt-5">
+                    <div className="border-t border-[#383154] pt-5">
                       <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                        <Sparkles className="w-3.5 h-3.5 text-[#A78BFA]" />
                         Explainable Factor Attribution (SHAP)
                       </h4>
 
@@ -427,7 +427,7 @@ export default function DemoPage() {
                   </div>
 
                   {/* Interactive What-If Simulation Sandbox */}
-                  <div className="p-6 rounded-2xl bg-[#091426] border border-[#182c47]">
+                  <div className="p-6 rounded-2xl bg-[#1C1933] border border-[#383154]">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <Sliders className="w-5 h-5 text-purple-400" />
@@ -444,7 +444,7 @@ export default function DemoPage() {
                       <div>
                         <div className="flex justify-between text-xs mb-1">
                           <span className="text-slate-300">Annual Revenue Shock:</span>
-                          <span className="font-mono text-cyan-300 font-bold">{revenueChange > 0 ? `+${revenueChange}` : revenueChange}%</span>
+                          <span className="font-mono text-[#C4B5FD] font-bold">{revenueChange > 0 ? `+${revenueChange}` : revenueChange}%</span>
                         </div>
                         <input
                           type="range"
@@ -453,14 +453,14 @@ export default function DemoPage() {
                           step="5"
                           value={revenueChange}
                           onChange={(e) => setRevenueChange(Number(e.target.value))}
-                          className="w-full accent-cyan-400 bg-slate-800 rounded-lg cursor-pointer"
+                          className="w-full accent-[#8B5CF6] bg-slate-800 rounded-lg cursor-pointer"
                         />
                       </div>
 
                       <div>
                         <div className="flex justify-between text-xs mb-1">
                           <span className="text-slate-300">Monthly Cash Flow Shock:</span>
-                          <span className="font-mono text-cyan-300 font-bold">{cashFlowChange > 0 ? `+${cashFlowChange}` : cashFlowChange}%</span>
+                          <span className="font-mono text-[#C4B5FD] font-bold">{cashFlowChange > 0 ? `+${cashFlowChange}` : cashFlowChange}%</span>
                         </div>
                         <input
                           type="range"
@@ -469,14 +469,14 @@ export default function DemoPage() {
                           step="5"
                           value={cashFlowChange}
                           onChange={(e) => setCashFlowChange(Number(e.target.value))}
-                          className="w-full accent-cyan-400 bg-slate-800 rounded-lg cursor-pointer"
+                          className="w-full accent-[#8B5CF6] bg-slate-800 rounded-lg cursor-pointer"
                         />
                       </div>
 
                       <div>
                         <div className="flex justify-between text-xs mb-1">
                           <span className="text-slate-300">Total Debt Obligation Adjustment:</span>
-                          <span className="font-mono text-cyan-300 font-bold">{debtChange > 0 ? `+${debtChange}` : debtChange}%</span>
+                          <span className="font-mono text-[#C4B5FD] font-bold">{debtChange > 0 ? `+${debtChange}` : debtChange}%</span>
                         </div>
                         <input
                           type="range"
@@ -485,7 +485,7 @@ export default function DemoPage() {
                           step="5"
                           value={debtChange}
                           onChange={(e) => setDebtChange(Number(e.target.value))}
-                          className="w-full accent-cyan-400 bg-slate-800 rounded-lg cursor-pointer"
+                          className="w-full accent-[#8B5CF6] bg-slate-800 rounded-lg cursor-pointer"
                         />
                       </div>
                     </div>
@@ -506,7 +506,7 @@ export default function DemoPage() {
                           Simulation Impact Result
                         </h5>
                         <div className="grid grid-cols-2 gap-3 text-center">
-                          <div className="p-2.5 rounded-lg bg-[#060d19]">
+                          <div className="p-2.5 rounded-lg bg-[#0C0A1D]">
                             <div className="text-[11px] text-slate-400">New Default Prob</div>
                             <div className="text-lg font-bold text-white">
                               {(simulationResult.simulated_default_prob * 100).toFixed(1)}%
@@ -517,7 +517,7 @@ export default function DemoPage() {
                             </div>
                           </div>
 
-                          <div className="p-2.5 rounded-lg bg-[#060d19]">
+                          <div className="p-2.5 rounded-lg bg-[#0C0A1D]">
                             <div className="text-[11px] text-slate-400">New Risk Score</div>
                             <div className="text-lg font-bold text-white">
                               {simulationResult.simulated_risk_score}
@@ -538,7 +538,7 @@ export default function DemoPage() {
         )}
 
         {/* BOTTOM CALL TO ACTION */}
-        <div className="mt-16 p-8 rounded-2xl bg-gradient-to-r from-[#0c1a2e] to-[#0a1526] border border-[#182c47] text-center">
+        <div className="mt-16 p-8 rounded-2xl bg-gradient-to-r from-[#1C1933] to-[#1C1933] border border-[#383154] text-center">
           <h2 className="text-xl font-bold text-white mb-2">Ready to Underwrite Live Applications?</h2>
           <p className="text-sm text-slate-300 max-w-xl mx-auto mb-6">
             Create an institution or borrower account to upload financial statements, verify OCR document extraction, and submit credit assessments for analyst review.
@@ -554,7 +554,7 @@ export default function DemoPage() {
         </div>
       </main>
 
-      <footer className="bg-[#040810] border-t border-[#101c2e] py-8 text-center text-xs text-slate-400">
+      <footer className="bg-[#0C0A1D] border-t border-[#1C1933] py-8 text-center text-xs text-slate-400">
         <p>&copy; {new Date().getFullYear()} MSME Risk AI. Decision-Support Public Sandbox.</p>
       </footer>
     </div>

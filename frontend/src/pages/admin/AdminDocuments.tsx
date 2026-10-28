@@ -81,7 +81,7 @@ export default function AdminDocuments() {
   }, [documents, statusFilter, searchQuery]);
 
   return (
-    <div className="flex min-h-screen bg-[#030712] text-slate-100">
+    <div className="flex min-h-screen bg-[#0C0A1D] text-slate-100">
       <Sidebar active="Documents" />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
@@ -97,16 +97,16 @@ export default function AdminDocuments() {
         <main className="p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
           {/* Section 16: Document Health KPIs */}
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-            <div className="p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b] shadow-md">
+            <div className="p-4 rounded-2xl bg-[#0C0A1D] border border-[#383154] shadow-md">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-semibold text-slate-400">Total Documents</span>
-                <FileText className="w-4 h-4 text-cyan-400" />
+                <FileText className="w-4 h-4 text-[#A78BFA]" />
               </div>
               <div className="text-2xl font-bold text-white">{total}</div>
               <div className="text-[11px] text-slate-400 mt-1">Uploaded Statements</div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b] shadow-md">
+            <div className="p-4 rounded-2xl bg-[#0C0A1D] border border-[#383154] shadow-md">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-semibold text-slate-400">Verified</span>
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -115,7 +115,7 @@ export default function AdminDocuments() {
               <div className="text-[11px] text-slate-400 mt-1">Fields Reconciled</div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b] shadow-md">
+            <div className="p-4 rounded-2xl bg-[#0C0A1D] border border-[#383154] shadow-md">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-semibold text-slate-400">Processing</span>
                 <Clock className="w-4 h-4 text-amber-400" />
@@ -124,7 +124,7 @@ export default function AdminDocuments() {
               <div className="text-[11px] text-slate-400 mt-1">Active Pipeline</div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b] shadow-md">
+            <div className="p-4 rounded-2xl bg-[#0C0A1D] border border-[#383154] shadow-md">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-semibold text-slate-400">Needs Review</span>
                 <FileCheck className="w-4 h-4 text-purple-400" />
@@ -133,7 +133,7 @@ export default function AdminDocuments() {
               <div className="text-[11px] text-slate-400 mt-1">Pending Sign-off</div>
             </div>
 
-            <div className="col-span-2 sm:col-span-1 p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b] shadow-md">
+            <div className="col-span-2 sm:col-span-1 p-4 rounded-2xl bg-[#0C0A1D] border border-[#383154] shadow-md">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-semibold text-slate-400">Failed / Corrupt</span>
                 <AlertCircle className="w-4 h-4 text-rose-400" />
@@ -144,7 +144,7 @@ export default function AdminDocuments() {
           </div>
 
           {/* Controls Bar: Search & Status Filter */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 rounded-2xl bg-[#081120] border border-[#1a2d4b]">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 rounded-2xl bg-[#0C0A1D] border border-[#383154]">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
@@ -152,7 +152,7 @@ export default function AdminDocuments() {
                 placeholder="Search by filename, business, or document type..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#0d1c33] border border-[#1d3559] text-sm text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500 transition"
+                className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#1C1933] border border-[#1d3559] text-sm text-white placeholder-slate-400 focus:outline-none focus:border-[#8B5CF6] transition"
               />
               {searchQuery && (
                 <button
@@ -168,7 +168,7 @@ export default function AdminDocuments() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 rounded-xl bg-[#0d1c33] border border-[#1d3559] text-xs font-semibold text-slate-200 focus:outline-none focus:border-cyan-500"
+                className="px-3 py-2 rounded-xl bg-[#1C1933] border border-[#1d3559] text-xs font-semibold text-slate-200 focus:outline-none focus:border-[#8B5CF6]"
               >
                 <option value="all">All Statuses</option>
                 <option value="verified">Verified</option>
@@ -178,7 +178,7 @@ export default function AdminDocuments() {
 
               <button
                 onClick={loadDocuments}
-                className="p-2 rounded-xl bg-[#0d1c33] border border-[#1d3559] text-slate-300 hover:text-white hover:bg-slate-800 transition shrink-0"
+                className="p-2 rounded-xl bg-[#1C1933] border border-[#1d3559] text-slate-300 hover:text-white hover:bg-slate-800 transition shrink-0"
                 title="Refresh document records"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -209,10 +209,10 @@ export default function AdminDocuments() {
               }}
             />
           ) : (
-            <div className="rounded-2xl bg-[#081120] border border-[#1a2d4b] overflow-hidden shadow-xl">
+            <div className="rounded-2xl bg-[#0C0A1D] border border-[#383154] overflow-hidden shadow-xl">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm text-slate-300">
-                  <thead className="bg-[#0c182b] text-[11px] uppercase tracking-wider text-slate-400 border-b border-[#1a2d4b]">
+                  <thead className="bg-[#1C1933] text-[11px] uppercase tracking-wider text-slate-400 border-b border-[#383154]">
                     <tr>
                       <th className="py-3 px-4">Document</th>
                       <th className="py-3 px-4">Business</th>
@@ -223,12 +223,12 @@ export default function AdminDocuments() {
                       <th className="py-3 px-4 text-right">Upload Date</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#162742]">
+                  <tbody className="divide-y divide-[#383154]">
                     {filteredDocs.map((d) => (
                       <tr key={d.id} className="hover:bg-slate-800/25 transition">
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-2.5">
-                            <FileText className="w-4 h-4 text-cyan-400 shrink-0" />
+                            <FileText className="w-4 h-4 text-[#A78BFA] shrink-0" />
                             <div className="min-w-0">
                               <span className="font-semibold text-white truncate max-w-xs block">
                                 {d.original_filename || d.filename}
@@ -291,10 +291,10 @@ export default function AdminDocuments() {
               </div>
 
               {/* Table Footer */}
-              <div className="p-3.5 bg-[#0c182b] border-t border-[#1a2d4b] text-xs text-slate-400 flex items-center justify-between">
+              <div className="p-3.5 bg-[#1C1933] border-t border-[#383154] text-xs text-slate-400 flex items-center justify-between">
                 <span>Showing {filteredDocs.length} of {documents.length} documents</span>
                 <span className="flex items-center gap-1.5 text-slate-400">
-                  <Lock className="w-3.5 h-3.5 text-cyan-400" />
+                  <Lock className="w-3.5 h-3.5 text-[#A78BFA]" />
                   Preserving signed URL isolation & tenant security
                 </span>
               </div>

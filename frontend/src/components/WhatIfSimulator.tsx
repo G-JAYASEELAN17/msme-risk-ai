@@ -123,7 +123,7 @@ export default function WhatIfSimulator({ baselineData, assessmentId }: WhatIfSi
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-cyan-400" />
+                <Sliders className="w-4 h-4 text-[#A78BFA]" />
                 <CardTitle>Hypothetical Scenario Adjustments</CardTitle>
               </div>
               <span className="text-xs text-slate-400 font-mono">Live Recalculation</span>
@@ -135,7 +135,7 @@ export default function WhatIfSimulator({ baselineData, assessmentId }: WhatIfSi
             <div>
               <div className="flex justify-between items-center text-xs font-semibold text-slate-200 mb-1.5">
                 <span>Annual Revenue (USD)</span>
-                <span className="font-mono text-cyan-400">${rev.toLocaleString()}</span>
+                <span className="font-mono text-[#A78BFA]">${rev.toLocaleString()}</span>
               </div>
               <input
                 type="range"
@@ -144,7 +144,7 @@ export default function WhatIfSimulator({ baselineData, assessmentId }: WhatIfSi
                 step="50000"
                 value={rev}
                 onChange={(e) => setRev(Number(e.target.value))}
-                className="w-full accent-cyan-400 h-1.5 bg-[#13233b] rounded-lg cursor-pointer"
+                className="w-full accent-[#8B5CF6] h-1.5 bg-[#252141] rounded-lg cursor-pointer"
               />
               <div className="flex justify-between text-[10px] text-slate-500 mt-1 font-mono">
                 <span>$100K</span>
@@ -166,7 +166,7 @@ export default function WhatIfSimulator({ baselineData, assessmentId }: WhatIfSi
                 step="25000"
                 value={debt}
                 onChange={(e) => setDebt(Number(e.target.value))}
-                className="w-full accent-rose-400 h-1.5 bg-[#13233b] rounded-lg cursor-pointer"
+                className="w-full accent-rose-400 h-1.5 bg-[#252141] rounded-lg cursor-pointer"
               />
               <div className="flex justify-between text-[10px] text-slate-500 mt-1 font-mono">
                 <span>$0</span>
@@ -188,7 +188,7 @@ export default function WhatIfSimulator({ baselineData, assessmentId }: WhatIfSi
                 step="10000"
                 value={cf}
                 onChange={(e) => setCf(Number(e.target.value))}
-                className="w-full accent-emerald-400 h-1.5 bg-[#13233b] rounded-lg cursor-pointer"
+                className="w-full accent-emerald-400 h-1.5 bg-[#252141] rounded-lg cursor-pointer"
               />
               <div className="flex justify-between text-[10px] text-slate-500 mt-1 font-mono">
                 <span>-$50K</span>
@@ -210,7 +210,7 @@ export default function WhatIfSimulator({ baselineData, assessmentId }: WhatIfSi
                   max="100"
                   value={util}
                   onChange={(e) => setUtil(Number(e.target.value))}
-                  className="w-full accent-cyan-400 h-1.5 bg-[#13233b] rounded-lg cursor-pointer"
+                  className="w-full accent-[#8B5CF6] h-1.5 bg-[#252141] rounded-lg cursor-pointer"
                 />
               </div>
 
@@ -225,7 +225,7 @@ export default function WhatIfSimulator({ baselineData, assessmentId }: WhatIfSi
                   max="100"
                   value={inv}
                   onChange={(e) => setInv(Number(e.target.value))}
-                  className="w-full accent-cyan-400 h-1.5 bg-[#13233b] rounded-lg cursor-pointer"
+                  className="w-full accent-[#8B5CF6] h-1.5 bg-[#252141] rounded-lg cursor-pointer"
                 />
               </div>
             </div>
@@ -244,8 +244,8 @@ export default function WhatIfSimulator({ baselineData, assessmentId }: WhatIfSi
                     onClick={() => setDefs(count)}
                     className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                       defs === count
-                        ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/50"
-                        : "bg-[#091424] text-slate-400 border-[#1c2e47] hover:border-slate-600"
+                        ? "bg-[#8B5CF6]/20 text-[#C4B5FD] border-[#8B5CF6]/50"
+                        : "bg-[#1C1933] text-slate-400 border-[#383154] hover:border-slate-600"
                     }`}
                   >
                     {count}
@@ -259,7 +259,7 @@ export default function WhatIfSimulator({ baselineData, assessmentId }: WhatIfSi
         {/* Right Simulation Outcome (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
           <Card className="flex flex-col justify-between overflow-hidden relative">
-            <div className="p-5 border-b border-[#16273f]">
+            <div className="p-5 border-b border-[#383154]">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                   Simulated Outcome
@@ -310,14 +310,14 @@ export default function WhatIfSimulator({ baselineData, assessmentId }: WhatIfSi
             </CardContent>
 
             {simulationResult && (
-              <div className="p-4 bg-[#081222] border-t border-[#16273f] text-xs">
+              <div className="p-4 bg-[#0C0A1D] border-t border-[#383154] text-xs">
                 <span className="font-bold text-slate-300 uppercase text-[10px] tracking-wider block mb-2">
                   Hypothetical Factor Shift
                 </span>
                 <ul className="space-y-1.5 text-slate-300">
                   {simulationResult.summary_of_changes.slice(0, 3).map((change, i) => (
                     <li key={i} className="flex items-center gap-2 text-[11px]">
-                      <span className="text-cyan-400 font-bold">•</span>
+                      <span className="text-[#A78BFA] font-bold">•</span>
                       <span>{change}</span>
                     </li>
                   ))}

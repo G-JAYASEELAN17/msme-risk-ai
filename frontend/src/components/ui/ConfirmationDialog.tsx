@@ -30,12 +30,12 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="sm">
       <div className="flex flex-col items-center text-center p-2">
         <div
-          className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${
+          className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${
             variant === "danger"
               ? "bg-rose-500/15 text-rose-400 border border-rose-500/30"
               : variant === "warning"
               ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-              : "bg-sky-500/15 text-sky-400 border border-sky-500/30"
+              : "bg-[#8B5CF6]/15 text-[#A78BFA] border border-[#8B5CF6]/30"
           }`}
         >
           {variant === "danger" || variant === "warning" ? (
@@ -45,8 +45,8 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
           )}
         </div>
 
-        <h3 className="text-base font-semibold text-white mb-2">{title}</h3>
-        <p className="text-sm text-slate-300 mb-6">{message}</p>
+        <h3 className="text-base font-bold text-[#F5F3FF] font-['Space_Grotesk'] mb-2">{title}</h3>
+        <p className="text-sm text-[#B7B1D1] mb-6 leading-relaxed">{message}</p>
 
         <div className="flex gap-3 w-full">
           <Button
